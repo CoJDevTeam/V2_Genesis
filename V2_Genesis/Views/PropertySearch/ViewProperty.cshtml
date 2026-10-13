@@ -257,7 +257,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                                     </div>
                                     <div class="ppd-val-sub">
                                         <span class="ppd-sub-label"><i class="fa-solid fa-calendar"></i> Effective Date</span>
-                                        <input class="ppd-val" disabled value="@(item.WefDate ?? "–")" />
+                                        <input class="ppd-val" disabled value="@(string.IsNullOrWhiteSpace(item.WefDate) ? "–" : V2_Genesis.Helpers.WefDateFormatter.Format(item.WefDate))" />
                                     </div>
                                     <div class="ppd-val-sub">
                                         <span class="ppd-sub-label"><i class="fa-solid fa-money-bill-wave"></i> Market Value</span>
@@ -288,7 +288,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                         </div>
                         <div class="ppd-row">
                             <span class="ppd-label"><i class="fa-solid fa-calendar-day"></i> Valuation Date</span>
-                            <input class="ppd-val" disabled value="@(d.ValuationDate ?? "–")" />
+                            <input class="ppd-val" disabled value="@(string.IsNullOrWhiteSpace(d.ValuationDate) ? "–" : V2_Genesis.Helpers.WefDateFormatter.Format(d.ValuationDate))" />
                         </div>
                     </div>
                 </div>

@@ -572,3 +572,18 @@
         justify-content: center;
     }
 }
+
+/* ── Same font as the rest of the app ───────────────────────────────
+   Logged in, the page uses _Legend_Layout (Bootstrap makes form fields
+   inherit Poppins). Not logged in, it uses _Layout, which has no
+   Bootstrap, so the read-only value boxes (<input class="ppd-val">) fell
+   back to the browser's default font. Set Poppins on the page and its
+   fields for both layouts. */
+.ppd-page,
+.ppd-page input,
+.ppd-page select,
+.ppd-page textarea,
+.ppd-page button,
+.ppd-val {
+    font-family: 'Poppins', Arial, sans-serif;
+}

@@ -1124,7 +1124,7 @@
                                 <td>@item.CatDesc</td>
                                 <td>@item.TownNameDesc</td>
                                 <td>@FormatZAR(item.MarketValue)</td>
-                                <td>@item.WefDate</td>
+                                <td>@WefDateFormatter.Format(item.WefDate)</td>
                                 <td>
                                     <div class="dropdown">
                                        <button class="cd-action-btn dropdown-toggle"
@@ -1691,7 +1691,7 @@
                                                         @FormatZAR(item.MarketValue)
                                                     }
                                                 </td>
-                                                <td>@item.WefDate</td>
+                                                <td>@WefDateFormatter.Format(item.WefDate)</td>
                                                 <td>
                                                     <div class="dropdown">
                                                        <button class="cd-action-btn dropdown-toggle"

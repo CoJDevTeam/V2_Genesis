@@ -251,9 +251,7 @@
                                     }
                                 </td>
                                 <td>
-                                    @(DateTime.TryParse(item.WefDate, out var wefDate)
-                                        ? wefDate.ToString("dd MMMM yyyy")
-                                        : item.WefDate)
+                                    @WefDateFormatter.Format(item.WefDate)
                                 </td>
                                 <td>
                                     <div class="dropdown">
@@ -721,9 +719,7 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @(DateTime.TryParse(item.WefDate, out var wefDate)
-                                        ? wefDate.ToString("dd MMMM yyyy")
-                                        : item.WefDate)
+                                    @WefDateFormatter.Format(item.WefDate)
                                 </td>
                                 <td>
                                     <div class="dropdown">

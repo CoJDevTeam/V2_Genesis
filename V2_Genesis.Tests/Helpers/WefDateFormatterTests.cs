@@ -4,17 +4,24 @@ using Xunit;
 namespace V2_Genesis.Tests.Helpers;
 
 /// <summary>
-/// The "With Effective Date" on the Section 51 notice is written in full.
-/// Roll dates are day-first (South Africa): 10/01/2025 is 10 January.
+/// The "With Effective Date" is written in full.
+/// "MM/dd/yyyy HH:mm:ss" is a SQL date that Dapper turned into text (month-first);
+/// a date typed without a time is read day-first (South Africa).
 /// </summary>
 public class WefDateFormatterTests
 {
     [Theory]
     [InlineData("10/01/2025", "10 January 2025")]
-    [InlineData("10/01/2025 00:00:00", "10 January 2025")]
     [InlineData("2025-01-10", "10 January 2025")]
     [InlineData("1/2/2024", "01 February 2024")]
     public void Writes_the_date_in_full_day_first(string input, string expected)
+        => Assert.Equal(expected, WefDateFormatter.Format(input));
+
+    [Theory]
+    [InlineData("07/01/2023 00:00:00", "01 July 2023")]
+    [InlineData("08/28/2025 00:00:00", "28 August 2025")]
+    [InlineData("10/01/2025 00:00:00", "01 October 2025")]
+    public void Sql_date_read_by_Dapper_is_month_first(string input, string expected)
         => Assert.Equal(expected, WefDateFormatter.Format(input));
 
     [Theory]
