@@ -517,14 +517,14 @@ namespace V2_Genesis.Controllers
             var captchaToken =
                 Request.Form["g-recaptcha-response"].ToString();
 
-            var captchaValid =
-                await _captcha.VerifyAsync(captchaToken);
+            var captcha =
+                await _captcha.CheckAsync(captchaToken);
 
-            if (!captchaValid)
+            if (!captcha.Passed)
             {
                 ModelState.AddModelError(
                     string.Empty,
-                    "Please complete the reCAPTCHA verification.");
+                    captcha.UserMessage);
 
                 return View(model);
             }

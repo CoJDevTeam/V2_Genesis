@@ -112,4 +112,37 @@ public class ReCaptchaServiceTests
     [InlineData("{\"success\":false,\"score\":0.9}", false)]
     public async Task V3_needs_success_and_a_score_of_at_least_MinScore(string json, bool expected)
         => Assert.Equal(expected, await MakeV3(json).VerifyAsync("token"));
+
+    private static ReCaptchaService MakeV2(HttpMessageHandler h) => new(
+        new HttpClient(h),
+        Options.Create(new ReCaptchaSettings { SecretKey = "secret" }),
+        NullLogger<ReCaptchaService>.Instance,
+        new Env("Staging"));
+
+    private sealed class Unreachable : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r, CancellationToken c)
+            => throw new HttpRequestException("No such host is known.");
+    }
+
+    [Theory]
+    [InlineData("{\"success\":true}", ReCaptchaOutcome.Passed)]
+    [InlineData("{\"success\":false,\"error-codes\":[\"invalid-input-secret\"]}", ReCaptchaOutcome.WrongSecretKey)]
+    [InlineData("{\"success\":false,\"error-codes\":[\"invalid-input-response\"]}", ReCaptchaOutcome.AnswerRejected)]
+    [InlineData("{\"success\":false,\"error-codes\":[\"timeout-or-duplicate\"]}", ReCaptchaOutcome.AnswerRejected)]
+    [InlineData("<html>proxy login</html>", ReCaptchaOutcome.GoogleUnreachable)]
+    public async Task Google_answers_map_to_a_clear_outcome(string json, ReCaptchaOutcome expected)
+        => Assert.Equal(expected, (await MakeV2(new FakeGoogleJson(json)).CheckAsync("token")).Outcome);
+
+    [Fact]
+    public async Task Server_without_internet_is_GoogleUnreachable()
+        => Assert.Equal(ReCaptchaOutcome.GoogleUnreachable, (await MakeV2(new Unreachable()).CheckAsync("token")).Outcome);
+
+    [Fact]
+    public async Task Unticked_box_is_NoAnswer_with_a_tick_message()
+    {
+        var r = await MakeV2(new FakeGoogleJson("{}")).CheckAsync("");
+        Assert.Equal(ReCaptchaOutcome.NoAnswer, r.Outcome);
+        Assert.Contains("I'm not a robot", r.UserMessage);
+    }
 }

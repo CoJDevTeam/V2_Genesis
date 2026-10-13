@@ -1,9 +1,18 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using V2_Genesis.Services.Interfaces;
 
 namespace V2_Genesis.Services.Implementations
 {
+    /// <summary>
+    /// Google reCAPTCHA check for the login page.
+    ///
+    /// The browser shows the widget with SiteKey; on sign-in the SERVER posts
+    /// the answer + SecretKey to Google (VerifyUrl). So the web server itself
+    /// must be able to reach Google over HTTPS (directly or via ProxyUrl).
+    /// Open /recaptcha-check on the server (http://localhost:…/recaptcha-check)
+    /// to test that without signing in.
+    /// </summary>
     public class ReCaptchaService : IReCaptchaService
     {
         private readonly HttpClient _http;
@@ -23,175 +32,107 @@ namespace V2_Genesis.Services.Implementations
             _environment = environment;
         }
 
-        public async Task<bool> VerifyAsync(string token)
+        public async Task<bool> VerifyAsync(string token) =>
+            (await CheckAsync(token)).Passed;
+
+        public async Task<ReCaptchaResult> CheckAsync(string token)
         {
-            // ---------------------------------------------------------
-            // DEVELOPMENT-ONLY BYPASS
-            // Only on a developer machine (ASPNETCORE_ENVIRONMENT =
-            // Development). UAT and Production ALWAYS verify with Google,
-            // whatever BypassVerification says — an IIS site with a
-            // non-"Production" environment name must not skip reCAPTCHA.
-            // ---------------------------------------------------------
+            // Development machine only. UAT ("Staging") and Production always
+            // verify, whatever BypassVerification says.
             if (_cfg.BypassVerification)
             {
                 if (_environment.IsDevelopment())
                 {
-                    _logger.LogWarning(
-                        "reCAPTCHA verification BYPASSED in {Environment}.",
-                        _environment.EnvironmentName);
-
-                    return true;
+                    _logger.LogWarning("reCAPTCHA BYPASSED in {Environment}.", _environment.EnvironmentName);
+                    return new(ReCaptchaOutcome.Bypassed);
                 }
 
-                _logger.LogError(
-                    "ReCaptcha:BypassVerification is true in {Environment} and was IGNORED; reCAPTCHA is verified.",
+                _logger.LogWarning(
+                    "ReCaptcha:BypassVerification is true in {Environment} and was IGNORED.",
                     _environment.EnvironmentName);
             }
 
             if (string.IsNullOrWhiteSpace(_cfg.SecretKey))
-            {
-                _logger.LogError(
-                    "ReCaptcha:SecretKey is not configured; sign-in is refused until it is set.");
-
-                return false;
-            }
+                return Fail(ReCaptchaOutcome.NotConfigured, "ReCaptcha:SecretKey is empty.");
 
             if (string.IsNullOrWhiteSpace(token))
-            {
-                _logger.LogWarning(
-                    "reCAPTCHA verification rejected because token was empty.");
+                return new(ReCaptchaOutcome.NoAnswer);
 
-                return false;
-            }
-
+            string json;
             try
             {
-                // Do not let Login wait for the default HttpClient
-                // timeout of 100 seconds when Google is unreachable.
-                using var cts =
-                    new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["secret"] = _cfg.SecretKey,
+                    ["response"] = token
+                });
 
-                using var content =
-                    new FormUrlEncodedContent(
-                        new Dictionary<string, string>
-                        {
-                            ["secret"] = _cfg.SecretKey,
-                            ["response"] = token
-                        });
-
-                using var response = await _http.PostAsync(
-                    _cfg.VerifyUrl,
-                    content,
-                    cts.Token);
+                using var response = await _http.PostAsync(_cfg.VerifyUrl, content, cts.Token);
+                json = await response.Content.ReadAsStringAsync(cts.Token);
 
                 if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError(
-                        "reCAPTCHA verification endpoint {VerifyUrl} returned HTTP {StatusCode}.",
-                        _cfg.VerifyUrl,
-                        (int)response.StatusCode);
-
-                    return false;
-                }
-
-                var json =
-                    await response.Content.ReadAsStringAsync(cts.Token);
-
-                using var doc = JsonDocument.Parse(json);
-
-                if (!doc.RootElement.TryGetProperty(
-                        "success",
-                        out var successElement))
-                {
-                    _logger.LogWarning(
-                        "reCAPTCHA response did not contain a success property.");
-
-                    return false;
-                }
-
-                var success = successElement.GetBoolean();
-
-                if (!success)
-                {
-                    string? errorCodes = null;
-
-                    if (doc.RootElement.TryGetProperty(
-                            "error-codes",
-                            out var errors))
-                    {
-                        errorCodes = errors.ToString();
-                    }
-
-                    // Error level so it is in "Genesis Log\Errors":
-                    //   invalid-input-secret   → SecretKey wrong / not the pair of SiteKey
-                    //   invalid-input-response → answer not valid for this key
-                    //   timeout-or-duplicate   → answer expired (2 min) or used twice
-                    _logger.LogError(
-                        "reCAPTCHA verification was rejected by Google. Errors: {Errors}. Response: {Json}",
-                        errorCodes ?? "None supplied",
-                        json);
-
-                    return false;
-                }
-
-                // v3: Google always says success for a valid token; the
-                // score decides (0.0 = bot … 1.0 = human).
-                if (_cfg.IsV3)
-                {
-                    var score =
-                        doc.RootElement.TryGetProperty("score", out var s) &&
-                        s.ValueKind == JsonValueKind.Number
-                            ? s.GetDouble()
-                            : 0.0;
-
-                    if (score < _cfg.MinScore)
-                    {
-                        _logger.LogWarning(
-                            "reCAPTCHA v3 score {Score} is below the minimum {MinScore}.",
-                            score,
-                            _cfg.MinScore);
-
-                        return false;
-                    }
-                }
-
-                return true;
+                    return Fail(ReCaptchaOutcome.GoogleUnreachable,
+                        $"{_cfg.VerifyUrl} returned HTTP {(int)response.StatusCode}.");
             }
             catch (OperationCanceledException)
             {
-                _logger.LogError(
-                    "reCAPTCHA verification timed out after 8 seconds: the server could not reach {VerifyUrl}. " +
-                    "Allow outbound HTTPS to it, set ReCaptcha:ProxyUrl, or use https://www.recaptcha.net/recaptcha/api/siteverify.",
-                    _cfg.VerifyUrl);
-
-                return false;
+                return Fail(ReCaptchaOutcome.GoogleUnreachable,
+                    $"No answer from {_cfg.VerifyUrl} within 10 seconds (firewall / proxy).");
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Unable to connect to the reCAPTCHA verification endpoint {VerifyUrl}. " +
-                    "Allow outbound HTTPS to it, set ReCaptcha:ProxyUrl, or use https://www.recaptcha.net/recaptcha/api/siteverify.",
-                    _cfg.VerifyUrl);
-
-                return false;
+                return Fail(ReCaptchaOutcome.GoogleUnreachable,
+                    $"Cannot connect to {_cfg.VerifyUrl}: {ex.Message}");
             }
-            catch (JsonException ex)
+
+            return Read(json);
+        }
+
+        private ReCaptchaResult Read(string json)
+        {
+            try
             {
-                _logger.LogError(
-                    ex,
-                    "Invalid JSON received from reCAPTCHA verification.");
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
 
-                return false;
+                var success = root.TryGetProperty("success", out var s) && s.ValueKind == JsonValueKind.True;
+                var errors = root.TryGetProperty("error-codes", out var e) ? e.ToString() : "";
+
+                if (!success)
+                {
+                    if (errors.Contains("invalid-input-secret") || errors.Contains("missing-input-secret"))
+                        return Fail(ReCaptchaOutcome.WrongSecretKey, $"Google: {errors}");
+
+                    _logger.LogWarning("reCAPTCHA answer rejected by Google: {Errors}", errors);
+                    return new(ReCaptchaOutcome.AnswerRejected, errors);
+                }
+
+                if (_cfg.IsV3)
+                {
+                    var score = root.TryGetProperty("score", out var sc) && sc.ValueKind == JsonValueKind.Number
+                        ? sc.GetDouble() : 0.0;
+                    if (score < _cfg.MinScore)
+                    {
+                        _logger.LogWarning("reCAPTCHA v3 score {Score} below {MinScore}.", score, _cfg.MinScore);
+                        return new(ReCaptchaOutcome.LowScore, $"score {score}");
+                    }
+                }
+
+                return new(ReCaptchaOutcome.Passed);
             }
-            catch (Exception ex)
+            catch (JsonException)
             {
-                _logger.LogError(
-                    ex,
-                    "reCAPTCHA verification failed.");
-
-                return false;
+                return Fail(ReCaptchaOutcome.GoogleUnreachable,
+                    "The answer from VerifyUrl is not Google's JSON (a proxy or firewall page?).");
             }
+        }
+
+        private ReCaptchaResult Fail(ReCaptchaOutcome outcome, string detail)
+        {
+            // Error level → also in "Genesis Log\Errors".
+            _logger.LogError("reCAPTCHA {Outcome}: {Detail}", outcome, detail);
+            return new(outcome, detail);
         }
     }
 }

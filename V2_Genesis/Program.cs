@@ -209,7 +209,19 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<V2_Genesis.Services.IPortalLinks, V2_Genesis.Services.PortalLinks>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
-builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();
+builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        // ReCaptcha:ProxyUrl – only when the server reaches Google through a proxy.
+        var proxyUrl = cfg["ReCaptcha:ProxyUrl"];
+        var handler = new HttpClientHandler();
+        if (!string.IsNullOrWhiteSpace(proxyUrl))
+        {
+            handler.Proxy = new System.Net.WebProxy(proxyUrl) { UseDefaultCredentials = true };
+            handler.UseProxy = true;
+        }
+        return handler;
+    });
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IPropertySearchService, PropertySearchService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
