@@ -1661,12 +1661,12 @@
                                             <tr>
                                                 <td>@item.PropertyDesc</td>
                                                 <td>
-                                                    @if (linkedIsLis || linkedIsOmission)
+                                                    @if (linkedIsOmission)
                                                     {
                                                         <span class="cd-source-value">
                                                             <span class="cd-source-dash">-</span>
-                                                            <span class="cd-source-badge @(linkedIsLis ? "cd-source-badge--lis" : "cd-source-badge--omitted")">
-                                                                @(linkedIsLis ? "LIS" : "Omitted")
+                                                            <span class="cd-source-badge cd-source-badge--omitted">
+                                                                Omitted
                                                             </span>
                                                         </span>
                                                     }
@@ -1677,12 +1677,12 @@
                                                 </td>
                                                 <td>@item.TownNameDesc</td>
                                                 <td>
-                                                    @if (linkedIsLis || linkedIsOmission)
+                                                    @if (linkedIsOmission)
                                                     {
                                                         <span class="cd-source-value">
                                                             <span class="cd-source-dash">-</span>
-                                                            <span class="cd-source-badge @(linkedIsLis ? "cd-source-badge--lis" : "cd-source-badge--omitted")">
-                                                                @(linkedIsLis ? "LIS" : "Omitted")
+                                                            <span class="cd-source-badge cd-source-badge--omitted">
+                                                                Omitted
                                                             </span>
                                                         </span>
                                                     }

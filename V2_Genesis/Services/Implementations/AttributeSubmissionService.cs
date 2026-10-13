@@ -33,12 +33,19 @@ namespace V2_Genesis.Services.Implementations
                 "AttributeRouting:BypassEvidenceWindow");
 
 
+            // "EvidenceWindowHours": 48 (normal). "EvidenceWindowMinutes" is
+            // only for short tests; Hours wins when both are set.
+            var windowHours = configuration.GetValue<int?>(
+                "AttributeRouting:EvidenceWindowHours");
+            var windowMinutes = configuration.GetValue<int?>(
+                "AttributeRouting:EvidenceWindowMinutes");
+
             _attributeEvidenceWindowMinutes =
                 Math.Max(
                     1,
-                    configuration.GetValue<int?>(
-                        "AttributeRouting:EvidenceWindowMinutes")
-                    ?? (48 * 60));
+                    windowHours.HasValue
+                        ? windowHours.Value * 60
+                        : windowMinutes ?? (48 * 60));
         }
 
         public AttributeSubmissionViewModel CreateNew(string formType)
