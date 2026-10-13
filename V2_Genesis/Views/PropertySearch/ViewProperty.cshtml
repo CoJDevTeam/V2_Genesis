@@ -108,7 +108,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
             <i class="fa-solid fa-circle-exclamation"></i>
             <h2>Property Not Found</h2>
             <p>The requested property details could not be loaded. Please go back and try again.</p>
-            <a href="javascript:history.back()" class="ppd-btn ppd-btn-outline">
+            <a href="javascript:genesisBack()" class="ppd-btn ppd-btn-outline">
                 <i class="fa-solid fa-arrow-left"></i> Go Back
             </a>
         </div>
@@ -138,7 +138,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                     <i class="fa-solid fa-scroll"></i>
                     @rollShort
                 </div>
-                <a href="javascript:history.back()" class="ppd-back-btn">
+                <a href="javascript:genesisBack()" class="ppd-back-btn">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </a>
             </div>
@@ -341,7 +341,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                     <i class="fa-solid fa-eye"></i>
                     This is a public, read-only property view.
                 </div>
-                <button type="button" class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button type="button" class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Back to Global Search
                 </button>
             }
@@ -395,7 +395,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                     <a href="@(anonLinkUrl + "&register=true")" class="ppd-btn ppd-btn-outline">
                         <i class="fa-solid fa-user-plus"></i> Register &amp; Link
                     </a>
-                    <button type="button" class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                    <button type="button" class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                         <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
                 }
@@ -406,7 +406,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                         The objection period@(string.IsNullOrWhiteSpace(rollShort) ? "" : " for ")<strong>@rollShort</strong> has passed.
                         You can still view the property details, but it can no longer be linked.
                     </div>
-                    <button type="button" class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                    <button type="button" class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                         <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
                 }
@@ -424,13 +424,13 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                 <a href="/register" class="ppd-btn ppd-btn-outline">
                     <i class="fa-solid fa-user-plus"></i> Register
                 </a>
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </button>
             }
             else if (isAttributes)
             {
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Back to Search
                 </button>
                 <form method="post" action="/attributes/link" style="display:inline;">
@@ -448,7 +448,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
             }
             else if (rollSource.Contains("Query", StringComparison.OrdinalIgnoreCase))
             {
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Cancel
                 </button>
                 <a class="ppd-btn ppd-btn-primary"
@@ -458,7 +458,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
             }
             else if (isAdmin)
             {
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Cancel
                 </button>
 
@@ -501,7 +501,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
             }
             else if (Model.IsWithinObjectionPeriod || isLis)
             {
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Cancel
                 </button>
 
@@ -548,7 +548,7 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
                     The objection period for <strong>@rollShort</strong> has passed.
                     You can still view the property details, but it can no longer be linked.
                 </div>
-                <button class="ppd-btn ppd-btn-outline" onclick="history.back()">
+                <button class="ppd-btn ppd-btn-outline" onclick="genesisBack()">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </button>
             }
@@ -562,6 +562,26 @@ string.Equals(Context?.Session?.GetString("PropertyFrom"), "LIS", StringComparis
 }
 
 @section Scripts {
+    @{
+        // Where "Back" goes when there is no page to go back to
+        // (link opened in a new tab, e-mail link, after sign-in …).
+        var backFallback = isAttributes ? "/attributes/search"
+            : isUniversalSearch ? "/admin/search"
+            : !string.IsNullOrWhiteSpace(roll?.Source) ? "/search/" + Uri.EscapeDataString(roll!.Source.Trim())
+            : "/";
+    }
+    <script>
+        // Back to the previous page (the search results) when we came from this
+        // site; otherwise to the search page of this roll.
+        window.genesisBack = function () {
+            var fallback = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(backFallback));
+            var sameSite = false;
+            try { sameSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (_) { }
+            var fromLogin = /\/(login|register|account)\b/i.test(document.referrer || '');
+            if (sameSite && !fromLogin && history.length > 1) { history.back(); }
+            else { location.href = fallback; }
+        };
+    </script>
     <script>
         function toggleSection(bodyId, chevId) {
             const body = document.getElementById(bodyId);

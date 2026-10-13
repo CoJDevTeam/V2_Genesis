@@ -735,3 +735,57 @@
         font-size: 17px;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   ONE ATTRIBUTES COLOUR
+   The form-type cards and the "Before you begin" notices used four
+   different colours (teal, slate, copper, purple / amber, blue …).
+   Attributes now uses one colour: the app teal (#006570) with the gold
+   accent, so every card and notice looks the same.
+   ══════════════════════════════════════════════════════════════════ */
+.ab-badge-green,
+.ab-badge-blue,
+.ab-badge-orange,
+.ab-badge-purple {
+    background: var(--ab-dark);
+    border-bottom: 3px solid var(--ab-gold);
+}
+
+.ab-notice-amber,
+.ab-notice-blue,
+.ab-notice-purple,
+.ab-notice-green {
+    background: #ffffff;
+    border-color: rgba(0, 101, 112, .25);
+    border-left: 4px solid var(--ab-dark);
+}
+
+    .ab-notice-amber .ab-notice-icon,
+    .ab-notice-blue .ab-notice-icon,
+    .ab-notice-purple .ab-notice-icon,
+    .ab-notice-green .ab-notice-icon {
+        color: var(--ab-gold);
+    }
+
+    .ab-notice-amber h4,
+    .ab-notice-blue h4,
+    .ab-notice-purple h4,
+    .ab-notice-green h4 {
+        color: var(--ab-dark);
+    }
+
+    .ab-notice-amber p,
+    .ab-notice-blue p,
+    .ab-notice-purple p,
+    .ab-notice-green p {
+        color: #3b4a4f;
+    }
+
+.ab-tip-green {
+    border-color: var(--ab-gold);
+    background: rgba(230, 176, 0, .08);
+}
+
+    .ab-tip-green i {
+        color: var(--ab-gold);
+    }

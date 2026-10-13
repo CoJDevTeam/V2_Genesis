@@ -552,9 +552,13 @@
                                    data-index="@i"
                                    autocomplete="tel"
                                    inputmode="tel"
-                                   maxlength="15"
+                                   maxlength="17"
                                    required
-                                   placeholder="0712345678" />
+                                   placeholder="0671234567 or +27671234567" />
+                            <div class="attr-phone-hint" id="cellHint-@i"
+                                 style="font-size:12px;margin-top:4px;color:#5b6b70;">
+                                Starts with 0 (e.g. 067 123 4567) or +27 (e.g. +27 67 123 4567).
+                            </div>
 
                             <span asp-validation-for="ContactInfos[i].CellNo"
                                   class="attr-field-error"></span>

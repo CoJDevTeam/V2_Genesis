@@ -28,14 +28,18 @@ namespace V2_Genesis.Services.Implementations
             IOptions<AppSettings> appOpts,
             ILogger<EmailService> logger,
             IConfiguration config,
-            AttributesDbContext attributesDb)
+            AttributesDbContext attributesDb,
+            V2_Genesis.Services.IPortalLinks links)
         {
+            _links = links;
             _cfg = emailOpts.Value;
             _app = appOpts.Value;
             _logger = logger;
             _config = config;
             _attributesDb = attributesDb;
         }
+
+        private readonly V2_Genesis.Services.IPortalLinks _links;
 
         private static readonly Dictionary<string, string> RollConnections = new()
         {
@@ -159,24 +163,27 @@ This is an automated email. Please do not reply directly.<br />
             $"<div style='text-align:center;margin:26px 0;'><a href='{H(link)}' style='display:inline-block;background:{EmailStyle.Gold};color:{EmailStyle.Dark};text-decoration:none;padding:13px 30px;border-radius:6px;font-weight:700;font-size:15px;'>{H(label)}</a></div>";
 
         // ── Upload Evidence PIN + link (Objection, Appeal, Query, Review) ──
-        private string EvidenceUploadLink(string referenceNo)
-        {
-            var portal =
-                _config["Portal:BaseUrl"] is { Length: > 0 } baseUrl ? baseUrl
-                : _config["Section51:Notice:PortalUrl"] is { Length: > 0 } s51Url ? s51Url
-                : "https://objections.joburg.org.za";
+        // Clients use the EXTERNAL address (objections.joburg.org.za);
+        // City staff on the City network can use the INTERNAL address.
+        private string EvidenceUploadLink(string referenceNo) =>
+            _links.Client(EvidencePath(referenceNo));
 
-            return portal.TrimEnd('/') +
-                   "/evidence/verify?objectionNo=" +
-                   Uri.EscapeDataString(referenceNo?.Trim() ?? string.Empty);
-        }
+        private string EvidenceUploadStaffLink(string referenceNo) =>
+            _links.Staff(EvidencePath(referenceNo));
+
+        private static string EvidencePath(string referenceNo) =>
+            "/evidence/verify?objectionNo=" + Uri.EscapeDataString(referenceNo?.Trim() ?? string.Empty);
+
+        /// Small line under a button: the same page on the City network.
+        private static string StaffLinkLine(string staffLink) =>
+            SmallPrint($"City staff on the City network: {H(staffLink)}");
 
         private static string PinCell(string? pin) =>
             string.IsNullOrWhiteSpace(pin)
                 ? "See the attached acknowledgement"
                 : $"<strong style='font-size:16px;letter-spacing:1px;'>{H(pin.Trim())}</strong>";
 
-        private static string EvidenceUploadSection(string referenceNo, string? pin, string link)
+        private static string EvidenceUploadSection(string referenceNo, string? pin, string link, string? staffLink = null)
         {
             var deadline = DateTime.Now.AddHours(48).ToString("dd MMMM yyyy 'at' HH:mm");
 
@@ -188,7 +195,8 @@ This is an automated email. Please do not reply directly.<br />
                        (string.IsNullOrWhiteSpace(pin) ? "" : $" <strong>{H(pin.Trim())}</strong>") +
                        ". You do not need to sign in. The PIN is only for uploading evidence for this submission &mdash; keep it safe and do not share it.")
                    + Button("Upload Evidence", link)
-                   + SmallPrint($"If the button does not work, copy this link into your browser: {H(link)}");
+                   + SmallPrint($"If the button does not work, copy this link into your browser: {H(link)}")
+                   + (string.IsNullOrWhiteSpace(staffLink) ? string.Empty : StaffLinkLine(staffLink));
         }
 
         private static string BulletList(IEnumerable<string> itemsHtml, bool numbered = false)
@@ -394,7 +402,8 @@ This is an automated email. Please do not reply directly.<br />
                         recipient,
                         recipients,
                         evidencePin,
-                        EvidenceUploadLink(objectionRef));
+                        EvidenceUploadLink(objectionRef),
+                        EvidenceUploadStaffLink(objectionRef));
 
                     // One failed address must not stop the other party.
                     try
@@ -558,7 +567,8 @@ This is an automated email. Please do not reply directly.<br />
                         isReview,
                         recipient,
                         evidencePin,
-                        EvidenceUploadLink(queryRef));
+                        EvidenceUploadLink(queryRef),
+                        EvidenceUploadStaffLink(queryRef));
 
                     try
                     {
@@ -674,7 +684,8 @@ This is an automated email. Please do not reply directly.<br />
             bool isReview,
             EmailRecipient recipient,
             string? evidencePin,
-            string evidenceLink)
+            string evidenceLink,
+            string? staffLink = null)
         {
             var actionWord = isReview ? "Review" : "Query";
             var lower = actionWord.ToLowerInvariant();
@@ -696,7 +707,7 @@ This is an automated email. Please do not reply directly.<br />
                     ("Recipient", H(RecipientLabel(recipient))),
                     ("Status", $"{actionWord}-Lodging"),
                     ("Upload Evidence PIN", PinCell(evidencePin)))
-                + EvidenceUploadSection(queryRef, evidencePin, evidenceLink)
+                + EvidenceUploadSection(queryRef, evidencePin, evidenceLink, staffLink)
                 + Notice($"<strong>Please keep your reference number</strong> ({H(queryRef)}) for all future correspondence regarding this {lower}. Your official acknowledgement document is attached to this email.")
                 + Contact(ValuationEnquiriesEmail, Section78EnquiriesPhone);
 
@@ -1239,7 +1250,8 @@ This is an automated email. Please do not reply directly.<br />
             EmailRecipient recipient,
             List<EmailRecipient> recipients,
             string? evidencePin,
-            string evidenceLink)
+            string evidenceLink,
+            string? staffLink = null)
         {
             var actionWord = isAppeal ? "appeal" : "objection";
             var ActionWord = isAppeal ? "Appeal" : "Objection";
@@ -1265,7 +1277,7 @@ This is an automated email. Please do not reply directly.<br />
                     ("Submission Date", H(now)),
                     ($"{ActorWord} Type", H(recipientType)),
                     ("Upload Evidence PIN", PinCell(evidencePin)))
-                + EvidenceUploadSection(objectionRef, evidencePin, evidenceLink)
+                + EvidenceUploadSection(objectionRef, evidencePin, evidenceLink, staffLink)
                 + Para($"Please find the official {ActionWord} acknowledgement and the populated {ActionWord} form attached to this email. Keep the attached documents for your records as proof of submission.")
                 + Contact(ValuationEnquiriesEmail, ObjectionEnquiriesPhone);
 
@@ -2128,7 +2140,7 @@ This is an automated email. Please do not reply directly.<br />
             // Direct link: opens the Section 51 upload page with the objection
             // number filled in. No portal account or sign-in is needed.
             var portal = string.IsNullOrWhiteSpace(notice.PortalUrl)
-                ? "https://objections.joburg.org.za"
+                ? V2_Genesis.Services.PortalLinks.DefaultExternal
                 : notice.PortalUrl.Trim().TrimEnd('/');
             var uploadLink = portal + "/section51/verify?objectionNo=" +
                 Uri.EscapeDataString(notice.ObjectionNo?.Trim() ?? string.Empty);
@@ -2163,6 +2175,9 @@ This is an automated email. Please do not reply directly.<br />
             }, numbered: false));
 
             content.Append(SmallPrint($"If the button does not work, copy this link into your browser: {H(uploadLink)}"));
+            if (!string.IsNullOrWhiteSpace(notice.StaffPortalUrl))
+                content.Append(StaffLinkLine(notice.StaffPortalUrl.Trim().TrimEnd('/') + "/section51/verify?objectionNo=" +
+                    Uri.EscapeDataString(notice.ObjectionNo?.Trim() ?? string.Empty)));
 
             content.Append(Para(
                 "You will be notified of the Municipal Valuer’s decision in terms of Section 53 of the " +

@@ -332,7 +332,13 @@ public class Section51Service : ISection51Service
         var settings = _config.GetSection("Section51:Notice");
         var daysOpen = settings.GetValue<int?>("DaysOpen") ?? 30;
         var batchName = settings["BatchName"] is { Length: > 0 } b ? b.Trim() : "GENESIS";
-        var portalUrl = settings["PortalUrl"] is { Length: > 0 } u ? u.Trim() : "https://objections.joburg.org.za";
+        // External address for the owner (Portal:ExternalUrl, then the old
+        // Section51:Notice:PortalUrl); internal address for City staff.
+        var portalUrl = _config["Portal:ExternalUrl"] is { Length: > 0 } ext ? ext.Trim().TrimEnd('/')
+            : settings["PortalUrl"] is { Length: > 0 } u ? u.Trim()
+            : V2_Genesis.Services.PortalLinks.DefaultExternal;
+        var staffPortalUrl = _config["Portal:InternalUrl"] is { Length: > 0 } inn ? inn.Trim().TrimEnd('/')
+            : V2_Genesis.Services.PortalLinks.DefaultInternal;
         var ccAddress = settings["CcAddress"];
         var testMode = settings.GetValue<bool?>("TestMode") ?? true;
         var testRecipient = settings["TestRecipient"];
@@ -509,6 +515,7 @@ public class Section51Service : ISection51Service
                     Section51Pin = request.Section51Pin,
                     SubmissionsCloseDate = closingDate,
                     PortalUrl = portalUrl,
+                    StaffPortalUrl = staffPortalUrl,
                     OwnerEmail = ownerEmail ?? string.Empty,
                     OwnerHasEmail = plan.OwnerHasEmail,
                     ToAddress = plan.To!,

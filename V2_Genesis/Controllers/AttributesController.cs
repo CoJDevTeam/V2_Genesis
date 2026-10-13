@@ -185,22 +185,59 @@ public class AttributesController : Controller
         return View();
     }
 
+    // GET /attributes/search[?SearchTownName=…] — the results page is a GET
+    // (Post/Redirect/Get), so "Back" from a property returns to the results
+    // instead of Chrome's "Confirm Form Resubmission".
     [HttpGet]
     [AllowAnonymous]
     [Route("attributes/search")]
-    public async Task<IActionResult> Search()
+    public async Task<IActionResult> Search(
+     string? SearchTownName, string? SearchStand,
+     string? SearchAddress, string? SearchScheme, string? SearchUnit)
     {
+        var hasCriteria =
+            !string.IsNullOrWhiteSpace(SearchTownName) || !string.IsNullOrWhiteSpace(SearchStand) ||
+            !string.IsNullOrWhiteSpace(SearchAddress) || !string.IsNullOrWhiteSpace(SearchScheme) ||
+            !string.IsNullOrWhiteSpace(SearchUnit);
+
+        if (hasCriteria)
+            return await RunAttributeSearch(SearchTownName, SearchStand, SearchAddress, SearchScheme, SearchUnit);
+
         ViewBag.GvList = await _db.GvList.OrderBy(r => r.ID).ToListAsync();
         ViewBag.Townships = await _attrSearch.GetTownshipsAsync();
         ViewBag.Schemes = await _attrSearch.GetSchemesAsync();
         return View();
     }
 
+    // POST /attributes/search — redirect to the GET results page.
     [HttpPost]
     [AllowAnonymous]
     [Route("attributes/search")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Search(
+    [ActionName("Search")]
+    public async Task<IActionResult> SearchPost(
+     string? SearchTownName, string? SearchStand,
+     string? SearchAddress, string? SearchScheme, string? SearchUnit)
+    {
+        var hasCriteria =
+            !string.IsNullOrWhiteSpace(SearchTownName) || !string.IsNullOrWhiteSpace(SearchStand) ||
+            !string.IsNullOrWhiteSpace(SearchAddress) || !string.IsNullOrWhiteSpace(SearchScheme) ||
+            !string.IsNullOrWhiteSpace(SearchUnit);
+
+        if (!hasCriteria)
+            return await RunAttributeSearch(null, null, null, null, null);
+
+        return RedirectToAction(nameof(Search), new
+        {
+            SearchTownName = SearchTownName?.Trim(),
+            SearchStand = SearchStand?.Trim(),
+            SearchAddress = SearchAddress?.Trim(),
+            SearchScheme = SearchScheme?.Trim(),
+            SearchUnit = SearchUnit?.Trim()
+        });
+    }
+
+    private async Task<IActionResult> RunAttributeSearch(
      string? SearchTownName, string? SearchStand,
      string? SearchAddress, string? SearchScheme, string? SearchUnit)
     {
@@ -216,7 +253,7 @@ public class AttributesController : Controller
             string.IsNullOrWhiteSpace(SearchUnit))
         {
             ViewBag.Error = "Please enter at least one search field.";
-            return View();
+            return View("Search");
         }
 
         var p = new PropertySearchParams
@@ -232,7 +269,7 @@ public class AttributesController : Controller
         ViewBag.SearchParams = p;
         ViewBag.Results = results;
         ViewBag.ResultCount = results.Count;
-        return View();
+        return View("Search");
     }
 
     [HttpPost]

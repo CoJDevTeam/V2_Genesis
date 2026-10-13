@@ -2316,7 +2316,7 @@ namespace V2_Genesis.Services.Implementations
                 }
                 else if (!IsValidPhone(contact.CellNo))
                 {
-                    errors.Add($"{label}: Cell number is invalid.");
+                    errors.Add($"{label}: Cell number is invalid. " + V2_Genesis.Helpers.PhoneNumberRules.Hint);
                 }
 
                 if (!IsBlank(contact.HomePhoneNo) && !IsValidPhone(contact.HomePhoneNo))
@@ -2371,7 +2371,7 @@ namespace V2_Genesis.Services.Implementations
                 }
                 else if (!IsValidPhone(model.RepresentativeDetails.Rep_Cell_Phone))
                 {
-                    errors.Add("Representative cell number is invalid.");
+                    errors.Add("Representative cell number is invalid. " + V2_Genesis.Helpers.PhoneNumberRules.Hint);
                 }
             }
         }
@@ -2766,19 +2766,8 @@ namespace V2_Genesis.Services.Implementations
             }
         }
 
-        private static bool IsValidPhone(string? phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return false;
-
-            var cleaned = CleanPhone(phone);
-
-            if (string.IsNullOrWhiteSpace(cleaned))
-                return false;
-
-            var digitsOnly = Regex.Replace(cleaned, @"\D", "");
-
-            return digitsOnly.Length >= 10 && digitsOnly.Length <= 15;
-        }
+        // 0XXXXXXXXX or +27XXXXXXXXX (see Helpers/PhoneNumberRules).
+        private static bool IsValidPhone(string? phone) =>
+            V2_Genesis.Helpers.PhoneNumberRules.IsValid(phone);
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.DataProtection;
+﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
@@ -192,6 +192,8 @@ builder.Services.Configure<ValuerPhotoStorageSettings>(builder.Configuration.Get
 builder.Services.Configure<AttributeStorageSettings>(builder.Configuration.GetSection("AttributeStorage"));
 builder.Services.Configure<GenesisLoggingSettings>(cfg.GetSection("GenesisLogging"));
 // ── Custom Services ───────────────────────────────────────────────────────────
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<V2_Genesis.Services.IPortalLinks, V2_Genesis.Services.PortalLinks>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();

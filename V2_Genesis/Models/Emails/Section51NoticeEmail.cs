@@ -12,7 +12,11 @@
         public string RollName { get; set; } = string.Empty;
         public string? Section51Pin { get; set; }
         public DateTime SubmissionsCloseDate { get; set; }
+        /// External address (clients).
         public string PortalUrl { get; set; } = string.Empty;
+
+        /// Internal address (City staff on the City network).
+        public string? StaffPortalUrl { get; set; }
 
         /// Owner email from the roll's postal-address table.
         public string OwnerEmail { get; set; } = string.Empty;

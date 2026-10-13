@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
         initialiseDeclarationDate();
         initialiseMixedUse();
         initialiseMaskedContacts();
@@ -87,6 +87,46 @@ document.addEventListener('DOMContentLoaded', function () {
             + value.substring(value.length - 3);
     }
 
+    // SA numbers: 0XXXXXXXXX (any number starting with 0) or +27XXXXXXXXX.
+    // Same rule as Helpers/PhoneNumberRules.cs on the server.
+    function isValidAttributePhone(value) {
+        let v = (value || '').trim().replace(/[\s\-().]/g, '');
+        if (!v) return false;
+        if (v.indexOf('+27') === 0) v = v.substring(3);
+        else if (v.indexOf('27') === 0 && v.length === 11) v = v.substring(2);
+        else if (v.charAt(0) === '0') return /^0\d{9}$/.test(v);
+        else return false;
+        if (v.charAt(0) === '0') v = v.substring(1);
+        return /^[1-9]\d{8}$/.test(v);
+    }
+
+    function validateAttributeCellNumbers(showRequired) {
+        let firstBad = null;
+        document.querySelectorAll('.masked-contact-display[data-mask-kind="phone"]').forEach(function (display) {
+            const index = display.dataset.index;
+            const real = document.querySelector('.masked-contact-real[data-mask-kind="phone"][data-index="' + index + '"]');
+            const hint = document.getElementById('cellHint-' + index);
+            const value = real ? real.value : '';
+            let message = '';
+
+            if (!value) {
+                if (showRequired) message = 'Cell number is required.';
+            } else if (!isValidAttributePhone(value)) {
+                message = 'Enter a number starting with 0 (e.g. 0671234567) or +27 (e.g. +27671234567).';
+            }
+
+            display.classList.toggle('is-invalid', !!message);
+            display.style.borderColor = message ? '#dc3545' : '';
+            if (hint) {
+                hint.textContent = message ||
+                    'Starts with 0 (e.g. 067 123 4567) or +27 (e.g. +27 67 123 4567).';
+                hint.style.color = message ? '#dc3545' : '#5b6b70';
+            }
+            if (message && !firstBad) firstBad = display;
+        });
+        return firstBad;
+    }
+
     function initialiseMaskedContacts() {
         document.querySelectorAll('.masked-contact-display').forEach(function (display) {
             const kind = display.dataset.maskKind;
@@ -114,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             display.addEventListener('blur', function () {
                 real.value = display.value.trim();
                 applyMask();
+                if (kind === 'phone') validateAttributeCellNumbers(false);
             });
 
             applyMask();
@@ -128,7 +169,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     '.masked-contact-real[data-mask-kind="' + kind + '"][data-index="' + index + '"]'
                 );
 
-                if (real && document.activeElement === display) {
+                // Copy what is in the box when it is not the masked text
+                // (focused, or filled by browser autofill without an input event).
+                if (real && (document.activeElement === display ||
+                             (display.value && display.value.indexOf('*') === -1))) {
                     real.value = display.value.trim();
                 }
             });
@@ -1793,6 +1837,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Please make sure the email address and confirmation email match before submitting.'
                 );
 
+                return;
+            }
+
+            const badCell = validateAttributeCellNumbers(true);
+            if (badCell) {
+                e.preventDefault();
+                badCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                badCell.focus();
+                alert('Please enter a valid cell number: it must start with 0 (e.g. 0671234567) or +27 (e.g. +27671234567).');
                 return;
             }
 

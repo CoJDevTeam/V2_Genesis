@@ -857,6 +857,59 @@
         });
 
         /*
+        * Back from a property: the results are loaded with AJAX, so going
+        * back reloads an empty search page. Remember the search when it is
+        * run and when a result is opened; on return, run it again.
+        */
+        const memoryKey = 'gs.search.' + rollSource;
+
+        function saveSearch() {
+        try {
+        sessionStorage.setItem(memoryKey, JSON.stringify({
+        town: town.value, address: address ? address.value : '',
+        stand: stand.value, scheme: scheme.value, unit: unit.value
+        }));
+        } catch (_) { }
+        }
+
+        form.addEventListener('submit', saveSearch, true);
+
+        document.getElementById('psmBody')?.addEventListener('click', function (e) {
+        const link = e.target.closest('a[href*="/property/view"]');
+        if (link) {
+        try { sessionStorage.setItem(memoryKey + '.return', '1'); } catch (_) { }
+        }
+        });
+
+        async function restoreSearchAfterBack() {
+        let saved = null;
+        try {
+        if (sessionStorage.getItem(memoryKey + '.return') !== '1') return;
+        sessionStorage.removeItem(memoryKey + '.return');
+        saved = JSON.parse(sessionStorage.getItem(memoryKey) || 'null');
+        } catch (_) { return; }
+        if (!saved || !saved.town) return;
+
+        town.value = saved.town;
+        if (town.value !== saved.town) return;     // township no longer listed
+        await loadSchemesForTownship();
+        if (address) address.value = saved.address || '';
+        stand.value = saved.stand || '';
+        if (saved.scheme) scheme.value = saved.scheme;
+        updateFieldStates();
+        if (saved.unit && !unit.disabled) unit.value = saved.unit;
+
+        if (form.requestSubmit) form.requestSubmit();
+        else form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+
+        // Normal load and back/forward cache.
+        restoreSearchAfterBack();
+        window.addEventListener('pageshow', function (ev) {
+        if (ev.persisted) restoreSearchAfterBack();
+        });
+
+        /*
         * Initial state:
         * - Scheme disabled until Township is selected.
         * - Unit disabled until Scheme is selected.

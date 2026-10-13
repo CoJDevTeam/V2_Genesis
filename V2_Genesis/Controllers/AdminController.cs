@@ -349,14 +349,15 @@ public class AdminController : Controller
         return View("SearchResults", result);
     }
 
-    // POST /admin/search/property — search by property attributes
+    // POST /admin/search/property — redirect to the GET results page
+    // (Post/Redirect/Get), so "Back" from a property returns to the results
+    // instead of "Confirm Form Resubmission".
     [HttpPost]
     [Route("admin/search/property")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SearchByProperty(
+    public IActionResult SearchByProperty(
         string? TownName, string? Stand, string? Address,
-        string? Scheme, string? Unit, string? rollSource,
-        CancellationToken cancellationToken)
+        string? Scheme, string? Unit, string? rollSource)
     {
         if (!IsAdmin()) return View("_NoAccess");
 
@@ -367,6 +368,27 @@ public class AdminController : Controller
             return RedirectToAction(nameof(Search));
         }
 
+        TempData["AuditPropertySearch"] = "1";   // audit once, not on every Back
+        return RedirectToAction(nameof(SearchByPropertyResults), new
+        {
+            TownName = TownName?.Trim(), Stand = Stand?.Trim(), Address = Address?.Trim(),
+            Scheme = Scheme?.Trim(), Unit = Unit?.Trim(), rollSource
+        });
+    }
+
+    // GET /admin/search/property?TownName=… — results page
+    [HttpGet]
+    [Route("admin/search/property")]
+    public async Task<IActionResult> SearchByPropertyResults(
+        string? TownName, string? Stand, string? Address,
+        string? Scheme, string? Unit, string? rollSource,
+        CancellationToken cancellationToken)
+    {
+        if (!IsAdmin()) return View("_NoAccess");
+
+        if (string.IsNullOrWhiteSpace(TownName))
+            return RedirectToAction(nameof(Search));
+
         var result = await _adminService.SearchByPropertyAsync(
             TownName,
             Stand,
@@ -376,9 +398,12 @@ public class AdminController : Controller
             rollSource,
             cancellationToken);
 
-        await _audit.LogAsync(AdminEmail, AuditActions.Search, SapNumber,
-            rollSource: rollSource ?? "All",
-            searchValue: result.SearchInput, ipAddress: ClientIp);
+        if (TempData["AuditPropertySearch"] as string == "1")
+        {
+            await _audit.LogAsync(AdminEmail, AuditActions.Search, SapNumber,
+                rollSource: rollSource ?? "All",
+                searchValue: result.SearchInput, ipAddress: ClientIp);
+        }
 
         return View("SearchResults", result);
     }
