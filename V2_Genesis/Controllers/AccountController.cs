@@ -896,14 +896,11 @@ namespace V2_Genesis.Controllers
                 await _userManager.AddToRoleAsync(user, "Admin");
             }
 
-            // ── 6. Persist audit claims against fixed admin account ────────
-            // These claims survive cookie refresh.
-            await PersistAdminClaimsAsync(
-                user,
-                sapFull,
-                fullName,
-                position,
-                umRole);
+            // ── 6. The person's claims go in THEIR cookie only ────────────
+            // Every admin uses this one shared account, so nothing about the
+            // person may be stored on it (the last admin to log in would
+            // overwrite the others). Remove what older builds stored there.
+            await RemoveSharedAdminClaimsAsync(user);
 
             // ── 7. Sign in using fixed admin account + audit claims ────────
             var additionalClaims = new List<Claim>
@@ -954,25 +951,15 @@ namespace V2_Genesis.Controllers
             return RedirectToAction("Index", "Admin");
         }
 
-        private async Task PersistAdminClaimsAsync(ApplicationUser user,
-        string sapValue, string fullName, string position, string role)
+        private async Task RemoveSharedAdminClaimsAsync(ApplicationUser user)
         {
-
-
-            var types = new[] { "SAPNumber", "FullName", "Position", "UMRole" };
-
             var existing = await _userManager.GetClaimsAsync(user);
+            var stale = existing
+                .Where(c => AdminLoginClaims.SharedAccountTypes.Contains(c.Type))
+                .ToList();
 
-            foreach (var old in existing.Where(c => types.Contains(c.Type)))
-                await _userManager.RemoveClaimAsync(user, old);
-            await _userManager.AddClaimsAsync(user, new[]
-            {
-  new Claim("SAPNumber",sapValue),
-  new Claim("FullName",fullName),
-  new Claim("Position",position),
-  new Claim("UMRole",role),
-}
-            );
+            if (stale.Count > 0)
+                await _userManager.RemoveClaimsAsync(user, stale);
         }
 
         private void WriteAdminCookie(string email, string sapValue, string fullName, string position)

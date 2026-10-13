@@ -154,6 +154,19 @@ builder.Services
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 builder.Services.AddAuthentication().AddNegotiate();
+
+// All admin staff share one Identity account. When Identity re-checks a
+// cookie (every 30 minutes) it rebuilds it from that shared account, which
+// would drop the person's Windows user / SAP number / name. Keep the
+// person's own admin claims so each admin stays themselves.
+builder.Services.Configure<SecurityStampValidatorOptions>(o =>
+{
+    o.OnRefreshingPrincipal = ctx =>
+    {
+        V2_Genesis.Helpers.AdminLoginClaims.CopyTo(ctx.CurrentPrincipal, ctx.NewPrincipal);
+        return Task.CompletedTask;
+    };
+});
 // ── Cookie paths (clean URLs, no /Account/Login) ─────────────────────────────
 builder.Services.ConfigureApplicationCookie(o =>
 {

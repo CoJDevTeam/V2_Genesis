@@ -116,10 +116,12 @@ public sealed class AdminAccountInformationService
         model.PhoneNumber = Clean(user.PhoneNumber);
         model.AccountType = isCompany ? "Company" : "Individual";
         model.CompanyRegistration = Clean(user.CompanyRegistration);
-        model.SapNumber = Clean(user.SAPNumber);
         model.AccountCreatedAt = user.CreationDate;
         model.EmailConfirmed = user.EmailConfirmed;
         model.IsAdministrativeAccount = IsAdministrativeAccount(model.Email);
+        // The shared admin account's SAP number is just whoever created it;
+        // the real capturer is CapturerSapNumber.
+        model.SapNumber = model.IsAdministrativeAccount ? string.Empty : Clean(user.SAPNumber);
 
         if (string.IsNullOrWhiteSpace(model.SubmittedByName))
             model.SubmittedByName = model.DisplayName;
