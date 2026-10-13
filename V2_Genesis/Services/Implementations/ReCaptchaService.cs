@@ -26,16 +26,34 @@ namespace V2_Genesis.Services.Implementations
         public async Task<bool> VerifyAsync(string token)
         {
             // ---------------------------------------------------------
-            // UAT / DEVELOPMENT BYPASS
-            // Never allow this bypass in Production.
+            // DEVELOPMENT-ONLY BYPASS
+            // Only on a developer machine (ASPNETCORE_ENVIRONMENT =
+            // Development). UAT and Production ALWAYS verify with Google,
+            // whatever BypassVerification says — an IIS site with a
+            // non-"Production" environment name must not skip reCAPTCHA.
             // ---------------------------------------------------------
-            if (_cfg.BypassVerification && !_environment.IsProduction())
+            if (_cfg.BypassVerification)
             {
-                _logger.LogWarning(
-                    "reCAPTCHA verification BYPASSED in {Environment}.",
-                    _environment.EnvironmentName);
+                if (_environment.IsDevelopment())
+                {
+                    _logger.LogWarning(
+                        "reCAPTCHA verification BYPASSED in {Environment}.",
+                        _environment.EnvironmentName);
 
-                return true;
+                    return true;
+                }
+
+                _logger.LogError(
+                    "ReCaptcha:BypassVerification is true in {Environment} and was IGNORED; reCAPTCHA is verified.",
+                    _environment.EnvironmentName);
+            }
+
+            if (string.IsNullOrWhiteSpace(_cfg.SecretKey))
+            {
+                _logger.LogError(
+                    "ReCaptcha:SecretKey is not configured; sign-in is refused until it is set.");
+
+                return false;
             }
 
             if (string.IsNullOrWhiteSpace(token))

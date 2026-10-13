@@ -142,6 +142,7 @@
                     <div class="recaptcha-wrap">
                         <div id="recaptchaContainer"></div>
                     </div>
+                    <div id="recaptchaError" class="f-err" role="alert" style="display:none;margin:-6px 0 14px;"></div>
                     <button type="submit" class="login-submit">
                         <i class="fa-solid fa-right-to-bracket"></i> Sign In
                     </button>
@@ -173,17 +174,55 @@
                 : 'fa-solid fa-eye-slash';
         }
 
+        let recaptchaWidgetId = null;
+
+        function showCaptchaError(msg) {
+            const box = document.getElementById('recaptchaError');
+            if (!box) return;
+            box.textContent = msg || '';
+            box.style.display = msg ? 'block' : 'none';
+        }
+
         window.onRecaptchaLoad = function () {
             const container = document.getElementById('recaptchaContainer');
             if (!container) return;
 
             const isSmall = window.matchMedia('(max-width: 480px)').matches;
 
-            grecaptcha.render('recaptchaContainer', {
+            recaptchaWidgetId = grecaptcha.render('recaptchaContainer', {
                 sitekey: '@siteKey',
-                size: isSmall ? 'compact' : 'normal'
+                size: isSmall ? 'compact' : 'normal',
+                callback: function () { showCaptchaError(''); },
+                'expired-callback': function () {
+                    showCaptchaError('The reCAPTCHA expired. Please tick "I\'m not a robot" again.');
+                }
             });
         };
+
+        // Do not post the form without a reCAPTCHA answer (the server
+        // checks it again with Google — this only gives a quick message).
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('recaptchaContainer');
+            const form = container ? container.closest('form') : null;
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                let answer = '';
+                try {
+                    if (window.grecaptcha && recaptchaWidgetId !== null)
+                        answer = grecaptcha.getResponse(recaptchaWidgetId);
+                } catch (_) { }
+
+                if (!answer) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    showCaptchaError(window.grecaptcha
+                        ? 'Please tick "I\'m not a robot" before signing in.'
+                        : 'The reCAPTCHA could not load. Check your internet connection and refresh the page.');
+                    container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, true);
+        });
     </script>
 
     <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>

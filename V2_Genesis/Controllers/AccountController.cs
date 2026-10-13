@@ -791,6 +791,15 @@ namespace V2_Genesis.Controllers
         {
             const string AdminAppEmail = "AdministrationEnquiries@Joburg.org.za";
 
+            // ── 0. Only after step 1 on /login (e-mail + password + reCAPTCHA).
+            //       Opening /admin/windows-login directly skipped all three.
+            if (string.IsNullOrWhiteSpace(HttpContext.Session.GetString(PendingAdminLoginEmailKey)))
+            {
+                _logger.LogWarning(
+                    "WindowsLogin: opened without the e-mail / password / reCAPTCHA step; sent to /login.");
+                return RedirectToAction(nameof(Login));
+            }
+
             // ── 1. Authenticate via Windows / Negotiate ───────────────────
             var authResult = await HttpContext.AuthenticateAsync(
                 NegotiateDefaults.AuthenticationScheme);
@@ -913,6 +922,7 @@ namespace V2_Genesis.Controllers
         new Claim("LoginType", "AdminWindows")
     };
 
+            HttpContext.Session.Remove(PendingAdminLoginEmailKey);
             HttpContext.Session.SetString("AdminAppEmail", AdminAppEmail);
 
             // Audit-trail identity
