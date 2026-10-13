@@ -43,6 +43,8 @@ public class ReCaptchaCheckController : Controller
                 "PROBLEM – Google was reached but the SecretKey is wrong (not the pair of the SiteKey).",
             ReCaptchaOutcome.GoogleUnreachable =>
                 "PROBLEM – this server cannot reach Google. Open outbound HTTPS to the VerifyUrl host, set ReCaptcha:ProxyUrl, or try https://www.recaptcha.net/recaptcha/api/siteverify.",
+            ReCaptchaOutcome.UnreachableAllowed =>
+                "PROBLEM – this server cannot reach Google. Sign-in is TEMPORARILY allowed (AllowSignInWhenGoogleUnreachable = true). Fix the firewall/proxy, then set it back to false.",
             ReCaptchaOutcome.NotConfigured =>
                 "PROBLEM – ReCaptcha:SecretKey is empty.",
             ReCaptchaOutcome.Bypassed =>
@@ -62,7 +64,8 @@ public class ReCaptchaCheckController : Controller
             $"SecretKey    : {Mask(_cfg.SecretKey)}\n" +
             $"Version      : {_cfg.Version}\n" +
             $"VerifyUrl    : {_cfg.VerifyUrl}\n" +
-            $"ProxyUrl     : {(string.IsNullOrWhiteSpace(_cfg.ProxyUrl) ? "(none)" : _cfg.ProxyUrl)}\n";
+            $"ProxyUrl     : {(string.IsNullOrWhiteSpace(_cfg.ProxyUrl) ? "(none)" : _cfg.ProxyUrl)}\n" +
+            $"AllowSignInWhenGoogleUnreachable : {_cfg.AllowSignInWhenGoogleUnreachable}\n";
 
         return Content(text, "text/plain");
     }

@@ -145,4 +145,18 @@ public class ReCaptchaServiceTests
         Assert.Equal(ReCaptchaOutcome.NoAnswer, r.Outcome);
         Assert.Contains("I'm not a robot", r.UserMessage);
     }
+
+    [Fact]
+    public async Task Unreachable_Google_is_allowed_only_when_switched_on_and_the_box_was_ticked()
+    {
+        ReCaptchaService Make(bool allow) => new(
+            new HttpClient(new Unreachable()),
+            Options.Create(new ReCaptchaSettings { SecretKey = "secret", AllowSignInWhenGoogleUnreachable = allow }),
+            NullLogger<ReCaptchaService>.Instance,
+            new Env("Production"));
+
+        Assert.False(await Make(false).VerifyAsync("token"));
+        Assert.True(await Make(true).VerifyAsync("token"));
+        Assert.False(await Make(true).VerifyAsync(""));   // not ticked
+    }
 }

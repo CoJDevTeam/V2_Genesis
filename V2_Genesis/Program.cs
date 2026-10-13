@@ -112,13 +112,12 @@ builder.Services.AddSession(o =>
     o.Cookie.Name = "V2Genesis.Session";
     o.Cookie.HttpOnly = true;
     o.Cookie.IsEssential = true;
-    // Secure-only cookies are silently dropped by the browser on a
-    // plain-HTTP connection — UAT is currently served over HTTP on a
-    // non-standard port with no working HTTPS binding, so this must
-    // relax outside Production or the session cookie never persists.
-    o.Cookie.SecurePolicy = builder.Environment.IsProduction()
-        ? CookieSecurePolicy.Always
-        : CookieSecurePolicy.SameAsRequest;
+    // Secure on HTTPS (https://objections.joburg.org.za), but still stored
+    // on the internal HTTP addresses (http://168.89.201.36:75, UAT :50).
+    // "Always" made the browser DROP the cookie on HTTP, so the admin step
+    // (e-mail + password → Windows sign-in) lost its session and the login
+    // page just reloaded.
+    o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     o.Cookie.SameSite = SameSiteMode.Lax;
 });
 
@@ -180,13 +179,10 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.Cookie.Name = "V2Genesis.Auth";
     o.Cookie.HttpOnly = true;
     o.Cookie.IsEssential = true;
-    // Same reasoning as the session cookie above — this is the cookie
-    // that actually proves someone is signed in. On Always+HTTP it
-    // never gets stored, so every request after a "successful" login
-    // looks unauthenticated again.
-    o.Cookie.SecurePolicy = builder.Environment.IsProduction()
-        ? CookieSecurePolicy.Always
-        : CookieSecurePolicy.SameAsRequest;
+    // Same as the session cookie: Secure on HTTPS, still works on the
+    // internal HTTP address. On Always+HTTP it is never stored, so every
+    // request after a "successful" login looks signed-out again.
+    o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     o.Cookie.SameSite = SameSiteMode.Lax;
 });
 
@@ -266,7 +262,18 @@ builder.Services.AddScoped<IAdminPropertyEnquiryService, AdminPropertyEnquirySer
 builder.Services.AddScoped<GenesisActionLoggingFilter>();
 builder.Services.AddScoped<IAttributeInspectionCalendarService, AttributeInspectionCalendarService>();
 
-builder.Services.AddDataProtection();
+// Keys that encrypt the sign-in cookie, the session and the form (antiforgery)
+// tokens. Kept in a folder so they SURVIVE an app-pool recycle / publish –
+// otherwise every recycle signs everyone out and an open login page fails
+// with "The antiforgery token could not be decrypted".
+// appsettings: "DataProtection": { "KeysPath": "E:\\Genesis Keys" }
+var dpKeysPath = cfg["DataProtection:KeysPath"];
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Genesis");
+if (!string.IsNullOrWhiteSpace(dpKeysPath))
+{
+    Directory.CreateDirectory(dpKeysPath);
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
+}
 
 // ── App Pipeline ──────────────────────────────────────────────────────────────
 var app = builder.Build();

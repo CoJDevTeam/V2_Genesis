@@ -37,6 +37,22 @@ namespace V2_Genesis.Services.Implementations
 
         public async Task<ReCaptchaResult> CheckAsync(string token)
         {
+            var result = await CheckWithGoogleAsync(token);
+
+            if (result.Outcome == ReCaptchaOutcome.GoogleUnreachable &&
+                _cfg.AllowSignInWhenGoogleUnreachable)
+            {
+                _logger.LogError(
+                    "reCAPTCHA could not be verified (Google unreachable) – sign-in ALLOWED because " +
+                    "ReCaptcha:AllowSignInWhenGoogleUnreachable is true. Turn it off once the server reaches Google.");
+                return new(ReCaptchaOutcome.UnreachableAllowed, result.Detail);
+            }
+
+            return result;
+        }
+
+        private async Task<ReCaptchaResult> CheckWithGoogleAsync(string token)
+        {
             // Development machine only. UAT ("Staging") and Production always
             // verify, whatever BypassVerification says.
             if (_cfg.BypassVerification)

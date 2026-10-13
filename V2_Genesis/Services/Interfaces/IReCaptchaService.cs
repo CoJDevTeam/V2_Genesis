@@ -14,6 +14,7 @@
     {
         Passed,
         Bypassed,          // Development only
+        UnreachableAllowed, // Google unreachable, AllowSignInWhenGoogleUnreachable = true
         NoAnswer,          // the box was not ticked
         AnswerRejected,    // expired (2 min), used twice, or not for this key
         LowScore,          // v3 only
@@ -24,7 +25,7 @@
 
     public sealed record ReCaptchaResult(ReCaptchaOutcome Outcome, string Detail = "")
     {
-        public bool Passed => Outcome is ReCaptchaOutcome.Passed or ReCaptchaOutcome.Bypassed;
+        public bool Passed => Outcome is ReCaptchaOutcome.Passed or ReCaptchaOutcome.Bypassed or ReCaptchaOutcome.UnreachableAllowed;
 
         /// Message for the person signing in.
         public string UserMessage => Outcome switch
@@ -52,6 +53,12 @@
         /// "http://proxy.joburg.org.za:8080", when the server can only reach
         /// the internet through a proxy. Empty = the server's default.
         public string? ProxyUrl { get; set; }
+
+        /// TEMPORARY: when true and the SERVER cannot reach Google, a person who
+        /// ticked the box may still sign in (password + lockout still apply;
+        /// every such sign-in is logged). Set back to false once the firewall
+        /// or proxy allows the server to reach Google.
+        public bool AllowSignInWhenGoogleUnreachable { get; set; }
 
         /// "v2" = "I'm not a robot" checkbox (default).
         /// "v3" = invisible score key. Must match the TYPE of the key in the

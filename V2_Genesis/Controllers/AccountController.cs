@@ -977,8 +977,8 @@ namespace V2_Genesis.Controllers
             {
                 Expires = expiresAt,
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = Request.IsHttps,   // still stored on the internal HTTP address
+                SameSite = SameSiteMode.Lax,
                 Path = "/"
             });
         }
