@@ -15,7 +15,12 @@ public record RollSearchConfig(
     string SpAddressScheme,
     string DetailSp,
     string ConnectionKey,
-    bool IsQuery = false     // ← default false, only Query overrides
+    bool IsQuery = false,    // ← default false, only Query overrides
+    // LEASE (Y/N) flag (read only): unit type FL or SL = lease.
+    // Lease = the roll table, LisLease = the LIS table of the LIS search.
+    // Null = no lease flag for that roll.
+    LeaseLookup? Lease = null,
+    LeaseLookup? LisLease = null
 );
 
 public static class RollSearchRegistry
@@ -100,7 +105,9 @@ public static class RollSearchRegistry
                 SpStandScheme: "SearchTownERFScheme",
                 SpAddressScheme: "SearchTownAddressScheme",
                 DetailSp: "IndexObjection",
-                ConnectionKey: "Sup4Connection"
+                ConnectionKey: "Sup4Connection",
+                Lease: LeaseLookup.Sup4,
+                LisLease: LeaseLookup.Lis_2026_10_01
             ),
 
             ["Objection_Supp5"] = new(

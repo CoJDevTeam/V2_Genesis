@@ -3,6 +3,7 @@ using GenesisV2.Services.PropertySearch;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using System.Data;
+using V2_Genesis.Helpers;
 using V2_Genesis.Models;
 using V2_Genesis.Models.Results;
 using V2_Genesis.Models.Results.Section78;
@@ -289,7 +290,9 @@ public class PropertySearchService : IPropertySearchService
              * Dapper maps it directly to:
              * PropertySearchResult.Review_Close_Date
              */
-            return results.ToList();
+            var list = results.ToList();
+            await ApplyLeaseFlagsAsync(conn, config.Lease, rollSource, list, cancellationToken);
+            return list;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -476,7 +479,9 @@ public class PropertySearchService : IPropertySearchService
              * Dapper maps it directly to:
              * PropertyDetailResult.Review_Close_Date
              */
-            return DeduplicatePropertyDetails(results);
+            var details = DeduplicatePropertyDetails(results);
+            await ApplyLeaseFlagsAsync(conn, config.Lease, rollSource, details, cancellationToken);
+            return details;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -495,6 +500,132 @@ public class PropertySearchService : IPropertySearchService
                 $"Property details could not be loaded for roll '{rollSource}'.",
                 ex);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LEASE (Y/N) flag (Supp 4)
+    // ─────────────────────────────────────────────────────────────
+    // Y when the unit type is FL or SL, otherwise N. Read only; the search
+    // procedures do not need to change.
+
+    private const int LeaseLookupChunk = 1000;
+
+    private async Task ApplyLeaseFlagsAsync(
+        SqlConnection conn,
+        LeaseLookup? lookup,
+        string rollSource,
+        List<PropertySearchResult> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0) return;
+        var flags = await LoadLeaseFlagsAsync(conn, lookup, rollSource,
+            rows.Select(r => r.UnitKey), cancellationToken);
+        if (flags is null) return;
+
+        foreach (var row in rows)
+        {
+            var flag = LeaseFlags.Find(flags, row.UnitKey, row.ValuationKey);
+            if (flag is not null)
+                row.Lease = LeaseFlags.SearchText(flag);
+        }
+    }
+
+    private async Task ApplyLeaseFlagsAsync(
+        SqlConnection conn,
+        LeaseLookup? lookup,
+        string rollSource,
+        List<PropertyDetailResult> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0) return;
+        var flags = await LoadLeaseFlagsAsync(conn, lookup, rollSource,
+            rows.Select(r => r.UnitKey), cancellationToken);
+        if (flags is null) return;
+
+        foreach (var row in rows)
+        {
+            var flag = LeaseFlags.Find(flags, row.UnitKey, row.ValuationKey);
+            if (flag is not null)
+                row.LeaseDesc = LeaseFlags.DetailText(flag);
+        }
+    }
+
+    private async Task<List<LeaseFlag>?> LoadLeaseFlagsAsync(
+        SqlConnection conn,
+        LeaseLookup? lookup,
+        string rollSource,
+        IEnumerable<string?> unitKeys,
+        CancellationToken cancellationToken)
+    {
+        if (lookup is null) return null;
+
+        var keys = unitKeys
+            .Select(LeaseFlags.Key)
+            .Where(k => k is not null)
+            .Select(k => k!.Value)
+            .Distinct()
+            .ToList();
+        if (keys.Count == 0) return null;
+
+        var table = lookup.Table;
+        var sql = lookup.BuildSql();
+
+        try
+        {
+            if (conn.State != ConnectionState.Open)
+                await conn.OpenAsync(cancellationToken);
+
+            var all = new List<LeaseFlag>();
+            foreach (var chunk in keys.Chunk(LeaseLookupChunk))
+            {
+                all.AddRange(await conn.QueryAsync<LeaseFlag>(
+                    new CommandDefinition(sql, new { Keys = chunk },
+                        commandTimeout: 15, cancellationToken: cancellationToken)));
+            }
+            return all;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // The flag is extra information – never fail the search over it
+            _logger.LogWarning(ex,
+                "Lease flags not loaded for roll {RollSource} ({Table}).",
+                rollSource, table);
+            return null;
+        }
+    }
+
+    /// LEASE (Y/N) for LIS search results (Supp 4 LIS table).
+    public async Task ApplyLisLeaseFlagsAsync(
+        string rollSource,
+        List<PropertySearchResult> rows,
+        CancellationToken cancellationToken = default)
+    {
+        if (rows.Count == 0 ||
+            !RollSearchRegistry.Configs.TryGetValue(rollSource, out var config) ||
+            config.LisLease is null)
+            return;
+
+        await using var conn = new SqlConnection(GetRollConnection(config));
+        await ApplyLeaseFlagsAsync(conn, config.LisLease, rollSource, rows, cancellationToken);
+    }
+
+    /// Lease field on Property Details for a LIS property.
+    public async Task ApplyLisLeaseFlagsAsync(
+        string rollSource,
+        List<PropertyDetailResult> rows,
+        CancellationToken cancellationToken = default)
+    {
+        if (rows.Count == 0 ||
+            !RollSearchRegistry.Configs.TryGetValue(rollSource, out var config) ||
+            config.LisLease is null)
+            return;
+
+        await using var conn = new SqlConnection(GetRollConnection(config));
+        await ApplyLeaseFlagsAsync(conn, config.LisLease, rollSource, rows, cancellationToken);
     }
 
     private static List<PropertyDetailResult>

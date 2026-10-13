@@ -20,6 +20,17 @@ namespace V2_Genesis.Services.Interfaces
             CancellationToken cancellationToken = default);
 
 
+        /// LEASE (Y/N) for LIS results: unit type FL / SL = lease.
+        Task ApplyLisLeaseFlagsAsync(
+            string rollSource,
+            List<PropertySearchResult> rows,
+            CancellationToken cancellationToken = default);
+
+        Task ApplyLisLeaseFlagsAsync(
+            string rollSource,
+            List<PropertyDetailResult> rows,
+            CancellationToken cancellationToken = default);
+
         Task<List<PropertyDetailResult>> GetPropertyDetailsAsync(
             string rollSource,
             string unitKey,

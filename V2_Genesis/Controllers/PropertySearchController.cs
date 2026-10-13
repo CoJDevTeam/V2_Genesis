@@ -554,12 +554,12 @@ public class PropertySearchController : Controller
                         mappedLisProperty.Review_Close_Date);
             }
 
+            var lisItems = new List<PropertyDetailResult> { mappedLisProperty };
+            await _search.ApplyLisLeaseFlagsAsync(rollSource, lisItems);
+
             var lisVm = new PropertyDetailViewModel
             {
-                Items = new List<PropertyDetailResult>
-    {
-        mappedLisProperty
-    },
+                Items = lisItems,
 
                 Roll = roll,
 
@@ -1316,6 +1316,9 @@ public class PropertySearchController : Controller
 
         ViewBag.Roll = rollRecord;
         ViewBag.IsLisSearch = true;
+
+        // LEASE (Y/N): unit type FL / SL. Never fails the search.
+        await _search.ApplyLisLeaseFlagsAsync(rollSource, mapped);
 
         return PartialView("_Results", mapped);
     }
