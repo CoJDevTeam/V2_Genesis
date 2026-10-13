@@ -89,4 +89,27 @@ public class ReCaptchaServiceTests
         var (svc, _) = Make("Production", bypass: false, googleSays: true);
         Assert.True(await svc.VerifyAsync("token"));
     }
+
+    private sealed class FakeGoogleJson : HttpMessageHandler
+    {
+        private readonly string _json;
+        public FakeGoogleJson(string json) => _json = json;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r, CancellationToken c)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_json) });
+    }
+
+    private static ReCaptchaService MakeV3(string json) => new(
+        new HttpClient(new FakeGoogleJson(json)),
+        Options.Create(new ReCaptchaSettings { SecretKey = "secret", Version = "v3", MinScore = 0.5 }),
+        NullLogger<ReCaptchaService>.Instance,
+        new Env("Production"));
+
+    [Theory]
+    [InlineData("{\"success\":true,\"score\":0.9}", true)]
+    [InlineData("{\"success\":true,\"score\":0.5}", true)]
+    [InlineData("{\"success\":true,\"score\":0.1}", false)]
+    [InlineData("{\"success\":true}", false)]
+    [InlineData("{\"success\":false,\"score\":0.9}", false)]
+    public async Task V3_needs_success_and_a_score_of_at_least_MinScore(string json, bool expected)
+        => Assert.Equal(expected, await MakeV3(json).VerifyAsync("token"));
 }

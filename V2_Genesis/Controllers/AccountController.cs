@@ -32,6 +32,7 @@ namespace V2_Genesis.Controllers
         private readonly AppSettings _app;
         private readonly SessionSettings _session;
         private readonly string _captchaSiteKey;
+        private readonly bool _captchaV3;
         private readonly ILogger<AccountController> _logger;
         private readonly INotificationService _notifications;
 
@@ -62,6 +63,7 @@ namespace V2_Genesis.Controllers
             _app = appOpts.Value;
             _session = sessionOpts.Value;
             _captchaSiteKey = captchaOpts.Value.SiteKey;
+            _captchaV3 = captchaOpts.Value.IsV3;
             _logger = logger;
             _notifications = notifications;
             _sapProtector = dataProtection.CreateProtector("SapRemember.v1");
@@ -486,6 +488,7 @@ namespace V2_Genesis.Controllers
 
             ViewBag.ReturnUrl = returnUrl;
             ViewBag.RecaptchaSiteKey = _captchaSiteKey;
+            ViewBag.RecaptchaV3 = _captchaV3;
             ViewBag.PendingLink = PendingPropertyLink.Read(HttpContext);
             return View(new LoginViewModel());
         }
@@ -500,6 +503,7 @@ namespace V2_Genesis.Controllers
         {
             ViewBag.ReturnUrl = returnUrl;
             ViewBag.RecaptchaSiteKey = _captchaSiteKey;
+            ViewBag.RecaptchaV3 = _captchaV3;
             ViewBag.PendingLink = PendingPropertyLink.Read(HttpContext);
 
             // 1. Validate email + password fields first

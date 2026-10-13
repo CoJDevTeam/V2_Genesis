@@ -4,6 +4,7 @@
     ViewData["Title"] = "Sign In";
     Layout = "_Layout";
     var siteKey = ViewBag.RecaptchaSiteKey as string ?? "";
+    var recaptchaV3 = ViewBag.RecaptchaV3 as bool? ?? false;
     var pendingLink = ViewBag.PendingLink as V2_Genesis.Helpers.PendingPropertyLink;
 }
 
@@ -139,9 +140,22 @@
                     </div>
  *@
 
-                    <div class="recaptcha-wrap">
-                        <div id="recaptchaContainer"></div>
-                    </div>
+                    @if (recaptchaV3)
+                    {
+                        <!-- reCAPTCHA v3: invisible; the token is added when the form is posted -->
+                        <input type="hidden" name="g-recaptcha-response" id="recaptchaV3Token" />
+                        <p class="text-muted" style="font-size:.75rem;margin:0 0 14px;">
+                            Protected by reCAPTCHA (Google
+                            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy</a> and
+                            <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms</a>).
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="recaptcha-wrap">
+                            <div id="recaptchaContainer"></div>
+                        </div>
+                    }
                     <div id="recaptchaError" class="f-err" role="alert" style="display:none;margin:-6px 0 14px;"></div>
                     <button type="submit" class="login-submit">
                         <i class="fa-solid fa-right-to-bracket"></i> Sign In
@@ -174,6 +188,9 @@
                 : 'fa-solid fa-eye-slash';
         }
 
+@if (!recaptchaV3)
+{
+<text>
         let recaptchaWidgetId = null;
 
         function showCaptchaError(msg) {
@@ -223,7 +240,47 @@
                 }
             }, true);
         });
+</text>
+}
+else
+{
+<text>
+        // reCAPTCHA v3 (invisible): get a token when the form is posted.
+        document.addEventListener('DOMContentLoaded', function () {
+            const tokenInput = document.getElementById('recaptchaV3Token');
+            const form = tokenInput ? tokenInput.closest('form') : null;
+            if (!form) return;
+
+            let sending = false;
+            form.addEventListener('submit', function (e) {
+                if (sending) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                if (!window.grecaptcha || !grecaptcha.ready) {
+                    alert('The reCAPTCHA could not load. Check your internet connection and refresh the page.');
+                    return;
+                }
+
+                grecaptcha.ready(function () {
+                    grecaptcha.execute('@siteKey', { action: 'login' }).then(function (token) {
+                        tokenInput.value = token;
+                        sending = true;
+                        form.submit();
+                    });
+                });
+            }, true);
+        });
+</text>
+}
     </script>
 
+    @if (recaptchaV3)
+    {
+        <script src="https://www.google.com/recaptcha/api.js?render=@siteKey" async defer></script>
+    }
+    else
+    {
     <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+    }
 }

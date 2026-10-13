@@ -86,8 +86,9 @@ namespace V2_Genesis.Services.Implementations
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning(
-                        "reCAPTCHA verification endpoint returned HTTP {StatusCode}.",
+                    _logger.LogError(
+                        "reCAPTCHA verification endpoint {VerifyUrl} returned HTTP {StatusCode}.",
+                        _cfg.VerifyUrl,
                         (int)response.StatusCode);
 
                     return false;
@@ -121,17 +122,47 @@ namespace V2_Genesis.Services.Implementations
                         errorCodes = errors.ToString();
                     }
 
-                    _logger.LogWarning(
-                        "reCAPTCHA verification was rejected by Google. Errors: {Errors}",
-                        errorCodes ?? "None supplied");
+                    // Error level so it is in "Genesis Log\Errors":
+                    //   invalid-input-secret   → SecretKey wrong / not the pair of SiteKey
+                    //   invalid-input-response → answer not valid for this key
+                    //   timeout-or-duplicate   → answer expired (2 min) or used twice
+                    _logger.LogError(
+                        "reCAPTCHA verification was rejected by Google. Errors: {Errors}. Response: {Json}",
+                        errorCodes ?? "None supplied",
+                        json);
+
+                    return false;
                 }
 
-                return success;
+                // v3: Google always says success for a valid token; the
+                // score decides (0.0 = bot … 1.0 = human).
+                if (_cfg.IsV3)
+                {
+                    var score =
+                        doc.RootElement.TryGetProperty("score", out var s) &&
+                        s.ValueKind == JsonValueKind.Number
+                            ? s.GetDouble()
+                            : 0.0;
+
+                    if (score < _cfg.MinScore)
+                    {
+                        _logger.LogWarning(
+                            "reCAPTCHA v3 score {Score} is below the minimum {MinScore}.",
+                            score,
+                            _cfg.MinScore);
+
+                        return false;
+                    }
+                }
+
+                return true;
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning(
-                    "reCAPTCHA verification timed out after 8 seconds.");
+                _logger.LogError(
+                    "reCAPTCHA verification timed out after 8 seconds: the server could not reach {VerifyUrl}. " +
+                    "Allow outbound HTTPS to it, set ReCaptcha:ProxyUrl, or use https://www.recaptcha.net/recaptcha/api/siteverify.",
+                    _cfg.VerifyUrl);
 
                 return false;
             }
@@ -139,7 +170,9 @@ namespace V2_Genesis.Services.Implementations
             {
                 _logger.LogError(
                     ex,
-                    "Unable to connect to the reCAPTCHA verification endpoint.");
+                    "Unable to connect to the reCAPTCHA verification endpoint {VerifyUrl}. " +
+                    "Allow outbound HTTPS to it, set ReCaptcha:ProxyUrl, or use https://www.recaptcha.net/recaptcha/api/siteverify.",
+                    _cfg.VerifyUrl);
 
                 return false;
             }
