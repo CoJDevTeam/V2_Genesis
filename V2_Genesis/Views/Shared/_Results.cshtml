@@ -80,7 +80,7 @@
                 <td>@(item.SchemeYear ?? "–")</td>
                 <td>@(item.Lease ?? "–")</td>
                 <td>@(item.UnitNo > 0 ? item.UnitNo.ToString() : "–")</td>
-                <td>@(item.Reason ?? "–")</td>
+                <td>@(string.Equals(item.Lease?.Trim(), "Y", StringComparison.OrdinalIgnoreCase) ? "Lease" : (item.Reason ?? "–"))</td>
             </tr>
         }
     </tbody>
