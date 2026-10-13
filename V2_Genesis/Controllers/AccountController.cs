@@ -339,7 +339,7 @@ namespace V2_Genesis.Controllers
             model.ActiveTab = "individual";
             ViewBag.ReturnUrl = returnUrl;
 
-            
+
             // Validate only the Individual sub-model
             ClearCompanyErrors();
 
@@ -1157,8 +1157,48 @@ namespace V2_Genesis.Controllers
         [AllowAnonymous]
         public IActionResult AccessDenied(string? ReturnUrl)
         {
+            // An admin who lands on a CLIENT page (Back button, a notification,
+            // "Dashboard" link …) is sent to the same place on the Admin
+            // Dashboard instead of "Access Denied".
+            //   /dashboard/roll-detail/{roll}?section=x  →  /admin?openRoll={roll}&section=x
+            //   /dashboard…                              →  /admin
+            if (User.IsInRole("Admin") && Url.IsLocalUrl(ReturnUrl))
+            {
+                var adminUrl = AdminUrlForClientPage(ReturnUrl!);
+                if (adminUrl is not null)
+                    return LocalRedirect(adminUrl);
+            }
+
             ViewBag.ReturnUrl = ReturnUrl;
             return View();
+        }
+
+        /// The Admin Dashboard address for a client dashboard address (null = no match).
+        internal static string? AdminUrlForClientPage(string returnUrl)
+        {
+            var qIndex = returnUrl.IndexOf('?');
+            var path = (qIndex >= 0 ? returnUrl[..qIndex] : returnUrl).TrimEnd('/');
+            var query = qIndex >= 0 ? returnUrl[(qIndex + 1)..] : string.Empty;
+
+            const string rollPrefix = "/dashboard/roll-detail/";
+            if (path.StartsWith(rollPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var roll = Uri.UnescapeDataString(path[rollPrefix.Length..]);
+                var section = query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Split('=', 2))
+                    .Where(p => p.Length == 2 && p[0].Equals("section", StringComparison.OrdinalIgnoreCase))
+                    .Select(p => Uri.UnescapeDataString(p[1]))
+                    .FirstOrDefault();
+
+                return "/admin?openRoll=" + Uri.EscapeDataString(roll) +
+                       (string.IsNullOrWhiteSpace(section) ? "" : "&section=" + Uri.EscapeDataString(section));
+            }
+
+            if (path.Equals("/dashboard", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/dashboard/", StringComparison.OrdinalIgnoreCase))
+                return "/admin";
+
+            return null;
         }
     }
 }
