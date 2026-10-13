@@ -39,7 +39,7 @@
 
         function updateMixedUse() {
             const selectedValue = (category.value || '').trim().toLowerCase();
-            const isMulti = selectedValue === 'multipurpose';
+            const isMulti = selectedValue === 'multipurpose' || selectedValue === 'multiple purposes';
 
             mixedRow.style.display = isMulti ? '' : 'none';
             mixedValue.value = isMulti ? 'true' : 'false';

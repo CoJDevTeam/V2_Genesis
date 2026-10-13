@@ -2,7 +2,7 @@
     ViewData["Title"] = "Search Enquiry";
     Layout = "~/Views/Shared/_Legend_Layout.cshtml";
     var gvList = ViewBag.GvList as List<V2_Genesis.Models.GvList> ?? new();
-    var towns = ViewBag.Townships as List<string> ?? new();
+    var towns = V2_Genesis.Helpers.NaturalSort.Order(ViewBag.Townships as List<string>);
     var schemes = ViewBag.Schemes as List<string> ?? new();
 }
 

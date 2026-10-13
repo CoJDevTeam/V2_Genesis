@@ -912,8 +912,11 @@ public class PropertySearchController : Controller
 
         try
         {
+            // LIS: link the ONE unit the client chose (unit key + valuation key),
+            // not the Property ID – all units of a scheme share that Property ID.
             var idProperty = isLis
-                ? FirstNotEmpty(propertyId, key, unitKey, valuationKey)
+                ? V2_Genesis.Helpers.LisLinkKey.Build(NormalizeKey(unitKey), NormalizeKey(valuationKey))
+                  ?? FirstNotEmpty(propertyId, key, unitKey, valuationKey)
                 : key;
 
             if (string.IsNullOrWhiteSpace(idProperty))
@@ -1440,6 +1443,6 @@ public class PropertySearchController : Controller
                 rollSource,
                 township);
 
-        return Json(schemes);
+        return Json(V2_Genesis.Helpers.NaturalSort.Order(schemes));
     }
 }

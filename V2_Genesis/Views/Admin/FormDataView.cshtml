@@ -1694,31 +1694,11 @@
                     <input style="margin-top: -1px;" id="desc_in" class="form-control" maxlength="100" type="text" onpaste="return false;" ondrop="return false;" name="New_Property_Description">
                 <label>CATEGORY</label>
                 <select name="New_Category" class="form-control" >
-                    <option value="Agricultural">Agricultural </option>
-                    <option value="Agricultural Business">Agricultural Business</option>
-                    <option value="Agricultural Residential">Agricultural Residential </option>
-                    <option value="Business & Commercial (Including Sect. Title units)">Business & Commercial (Including Sect. Title units) </option>
-                    <option value="Consent Use">Consent Use </option>
-                    <option value="Education">Education</option>
-                    <option value="Industrial">Industrial</option>
-                    <option value="Mining">Mining </option>
-                    <option value="Multiple Purpose">Multiple Purpose </option>
-                    <option value="Municipal">Municipal</option>
-                    <option value="Public Benefit Organisations">Public Benefit Organisations </option>
-                    <option value="Public Service Infrastructure">Public Service Infrastructure </option>
-                    <option value="Public Service Infrastructure Private">Public Service Infrastructure Private </option>
-                    <option value="Public Service Purpose">Public Service Purpose </option>
-                    <option value="Public Open Space">Public Open Space</option>
-                    <option value="Private Open Space">Private Open Space</option>
-                    <option value="R.E. of Township">R.E. of Township</option>
-                    <option value="Religious">Religious</option>
-                    <option value="Residential (Including Sect. Title units)">Residential (Including Sect. Title units)</option>
-                    <option value="Sectional Title Other">Sectional Title Other</option>
-                    <option value="State">State</option>
-                    <option value="Township Establishment">Township Establishment </option>
-                    <option value="Vacant Land">Vacant Land </option>
-                    <option selected></option>
-
+                    <option value="">--Select Category--</option>
+                    @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                    {
+                        <option value="@__cat">@__cat</option>
+                    }
                 </select>
 
                 <label>PHYSICAL ADDRESS/DOOR NO./FLAT NO.</label>

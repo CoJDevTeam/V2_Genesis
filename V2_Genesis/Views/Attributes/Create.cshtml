@@ -4,6 +4,19 @@
     ViewData["Title"] = "Attribute Property Submission";
     //Layout = "~/Views/Shared/_ClientLayout.cshtml";
     Layout = "~/Views/Shared/_Legend_Layout.cshtml";
+
+    // Roll category -> the name in the category list (Rates Policy 2026/27),
+    // e.g. "Public Service Infrastructure - Private" -> "Private Service
+    // Infrastructure", "Farming" -> "Agricultural", so the dropdown preselects it.
+    if (Model.ValuationDetails is not null)
+    {
+        Model.ValuationDetails.ValuationCategoryOnRoll =
+            V2_Genesis.Helpers.RollCategories.Normalize(Model.ValuationDetails.ValuationCategoryOnRoll)
+            ?? Model.ValuationDetails.ValuationCategoryOnRoll;
+        Model.ValuationDetails.ActualUse =
+            V2_Genesis.Helpers.RollCategories.Normalize(Model.ValuationDetails.ActualUse)
+            ?? Model.ValuationDetails.ActualUse;
+    }
     bool isRes = Model.FormType == "Residential";
     bool isSt = Model.FormType == "ResidentialST";
     bool isBus = Model.FormType == "BusinessCommercial";
@@ -376,20 +389,10 @@
                     <td>
                         <select asp-for="ValuationDetails.ValuationCategoryOnRoll" class="attr-select" id="valuationCategory" required>
                             <option value="">-- Select Category --</option>
-                            <option>Agricultural</option>
-                            <option>Business and Commercial</option>
-                            <option>Industrial</option>
-                            <option>Mining</option>
-                            <option>Municipal</option>
-                            <option>Multipurpose</option>
-                            <option>Private Open Space</option>
-                            <option>Public Open Space</option>
-                            <option>Public Service Infrastructure</option>
-                            <option>Public Service Purposes</option>
-                            <option>Religious</option>
-                            <option>Residential</option>
-                            <option>Residential with Consent Use</option>
-                            <option>Vacant Land</option>
+                            @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                            {
+                                <option value="@__cat">@__cat</option>
+                            }
                         </select>
                     </td>
 
@@ -400,20 +403,10 @@
                                 id="actualUse"
                                 required>
                             <option value="">-- Select Actual Use --</option>
-                            <option>Agricultural</option>
-                            <option>Business and Commercial</option>
-                            <option>Industrial</option>
-                            <option>Mining</option>
-                            <option>Municipal</option>
-                            <option>Multipurpose</option>
-                            <option>Private Open Space</option>
-                            <option>Public Open Space</option>
-                            <option>Public Service Infrastructure</option>
-                            <option>Public Service Purposes</option>
-                            <option>Religious</option>
-                            <option>Residential</option>
-                            <option>Residential with Consent Use</option>
-                            <option>Vacant Land</option>
+                            @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                            {
+                                <option value="@__cat">@__cat</option>
+                            }
                         </select>
                         <span asp-validation-for="ValuationDetails.ActualUse" class="attr-field-error"></span>
                     </td>

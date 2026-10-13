@@ -6,7 +6,7 @@
 @{
     var rollSource = ViewBag.RollSource as string ?? "Objection_Supp3";
     var rollName = ViewBag.RollName as string ?? rollSource;
-    var towns = ViewBag.Towns as List<string> ?? new List<string>();
+    var towns = V2_Genesis.Helpers.NaturalSort.Order(ViewBag.Towns as List<string>);
     var schemes = ViewBag.Schemes as List<string> ?? new List<string>();
     var sp = ViewBag.SearchParams as LisSearchParams ?? new LisSearchParams();
 

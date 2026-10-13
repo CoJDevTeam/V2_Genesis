@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -157,7 +157,11 @@ public class HomeController : Controller
             "[HomeController] /home/townships → {T} towns, {S} schemes",
             towns.Count, schemes.Count);
 
-        return Json(new { towns, schemes });
+        return Json(new
+        {
+            towns = V2_Genesis.Helpers.NaturalSort.Order(towns),
+            schemes = V2_Genesis.Helpers.NaturalSort.Order(schemes)
+        });
     }
 
     // ── POST /home/search ────────────────────────────────────────────────

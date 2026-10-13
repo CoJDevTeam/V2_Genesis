@@ -1,4 +1,4 @@
-// Section 78 Query/Review form parity with the Objection forms.
+﻿// Section 78 Query/Review form parity with the Objection forms.
 // Keeps the same-value modal behaviour and resets category dropdowns
 // when the selected category is already reflected on the valuation roll.
 (function () {
@@ -24,8 +24,8 @@
     function normaliseCategory(value) {
         var v = normaliseText(value);
         var map = {
-            "residential": "residential property",
-            "residential property": "residential property",
+            "residential": "residential",
+            "residential property": "residential",
             "business": "business and commercial",
             "commercial": "business and commercial",
             "business and commercial": "business and commercial",
@@ -39,7 +39,17 @@
             "multi purpose": "multipurpose",
             "multi-purpose": "multipurpose",
             "vacant": "vacant land",
-            "vacant land": "vacant land"
+            "vacant land": "vacant land",
+            // Rates Policy 2026/27 names (Helpers/RollCategories.cs) vs old names
+            "mining land": "mining",
+            "municipal property": "municipal",
+            "public service purpose": "public service purposes",
+            "public benefit organisations": "public benefit organisation",
+            "public service infrastructure - private": "private service infrastructure",
+            "public service infrastructure -private": "private service infrastructure",
+            "public service infrastructure private": "private service infrastructure",
+            "consent use": "residential with consent use",
+            "township establishment": "township development"
         };
         return map[v] || v;
     }

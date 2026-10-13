@@ -4043,24 +4043,10 @@
                     <select style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1); cursor: pointer;"
                             id="NewCat" asp-for="New_Category">
                         <option value="" selected disabled>--Select Category--</option>
-                        <option value="Business and Commercial">Business and Commercial</option>
-                        <option value="Farming">Farming</option>
-                        <option value="Industrial">Industrial</option>
-                        <option value="Mining Land">Mining Land</option>
-                        <option value="MultiPurpose*">MultiPurpose*</option>
-                        <option value="Municipal Property">Municipal Property</option>
-                        <option value="Private Open Space">Private Open Space</option>
-                        <option value="Public Benefit Organisation">Public Benefit Organisation</option>
-                        <option value="Public Open Space">Public Open Space</option>
-                        <option value="Public Service Infrastructure">Public Service Infrastructure</option>
-                        <option value="Public Service Infrastructure -Private">Public Service Infrastructure -Private</option>
-                        <option value="Public Service Purpose">Public Service Purpose</option>
-                        <option value="Religious">Religious</option>
-                        <option value="Residential Property">Residential Property</option>
-                      <option value="Residential with Consent Use">Residential with Consent Use</option>
-                        <option value="Township Development">Township Development</option>
-                        <option value="Vacant Land">Vacant Land </option>
-
+                        @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                        {
+                            <option value="@__cat">@__cat</option>
+                        }
                     </select>
 
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #006570; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">PHYSICAL ADDRESS/DOOR NO./FLAT NO.</label>
@@ -4085,25 +4071,10 @@
                     <select style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1); cursor: pointer;"
                             id="NewCat1" asp-for="New2_Category">
                         <option value="" selected disabled>--Select Category--</option>
-                        <option value="Business and Commercial">Business and Commercial</option>
-                        <option value="Farming">Farming</option>
-                        <option value="Industrial">Industrial</option>
-                        <option value="Mining Land">Mining Land</option>
-                        <option value="MultiPurpose*">MultiPurpose*</option>
-                        <option value="Municipal Property">Municipal Property</option>
-                        <option value="Private Open Space">Private Open Space</option>
-                        <option value="Public Benefit Organisation">Public Benefit Organisation</option>
-                        <option value="Public Open Space">Public Open Space</option>
-                        <option value="Public Service Infrastructure">Public Service Infrastructure</option>
-                        <option value="Public Service Infrastructure -Private">Public Service Infrastructure -Private</option>
-                        <option value="Public Service Purpose">Public Service Purpose</option>
-                        <option value="Religious">Religious</option>
-                        <option value="Residential Property">Residential Property</option>
-                      <option value="Residential with Consent Use">Residential with Consent Use</option>
-                        <option value="Township Development">Township Development</option>
-                        <option value="Vacant Land">Vacant Land </option>
-                        <option selected></option>
-
+                        @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                        {
+                            <option value="@__cat">@__cat</option>
+                        }
                     </select>
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #006570; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">EXTENT</label>
                     <input style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1);"
@@ -4121,25 +4092,10 @@
                     <select style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1); cursor: pointer;"
                             id="NewCat2" asp-for="New3_Category">
                         <option value="" selected disabled>--Select Category--</option>
-                        <option value="Business and Commercial">Business and Commercial</option>
-                        <option value="Farming">Farming</option>
-                        <option value="Industrial">Industrial</option>
-                        <option value="Mining Land">Mining Land</option>
-                        <option value="MultiPurpose*">MultiPurpose*</option>
-                        <option value="Municipal Property">Municipal Property</option>
-                        <option value="Private Open Space">Private Open Space</option>
-                        <option value="Public Benefit Organisation">Public Benefit Organisation</option>
-                        <option value="Public Open Space">Public Open Space</option>
-                        <option value="Public Service Infrastructure">Public Service Infrastructure</option>
-                        <option value="Public Service Infrastructure -Private">Public Service Infrastructure -Private</option>
-                        <option value="Public Service Purpose">Public Service Purpose</option>
-                        <option value="Religious">Religious</option>
-                        <option value="Residential Property">Residential Property</option>
-                      <option value="Residential with Consent Use">Residential with Consent Use</option>
-                        <option value="Township Development">Township Development</option>
-                        <option value="Vacant Land">Vacant Land </option>
-                        <option selected></option>
-
+                        @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                        {
+                            <option value="@__cat">@__cat</option>
+                        }
                     </select>
 
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #006570; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">EXTENT</label>
@@ -4156,25 +4112,10 @@
                     <select style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1); cursor: pointer;"
                             id="NewCat3">
                         <option value="" selected disabled>--Select Category--</option>
-                        <option value="Business and Commercial">Business and Commercial</option>
-                        <option value="Farming">Farming</option>
-                        <option value="Industrial">Industrial</option>
-                        <option value="Mining Land">Mining Land</option>
-                        <option value="MultiPurpose*">MultiPurpose*</option>
-                        <option value="Municipal Property">Municipal Property</option>
-                        <option value="Private Open Space">Private Open Space</option>
-                        <option value="Public Benefit Organisation">Public Benefit Organisation</option>
-                        <option value="Public Open Space">Public Open Space</option>
-                        <option value="Public Service Infrastructure">Public Service Infrastructure</option>
-                        <option value="Public Service Infrastructure -Private">Public Service Infrastructure -Private</option>
-                        <option value="Public Service Purpose">Public Service Purpose</option>
-                        <option value="Religious">Religious</option>
-                        <option value="Residential Property">Residential Property</option>
-                      <option value="Residential with Consent Use">Residential with Consent Use</option>
-                        <option value="Township Development">Township Development</option>
-                        <option value="Vacant Land">Vacant Land </option>
-                        <option selected></option>
-
+                        @foreach (var __cat in V2_Genesis.Helpers.RollCategories.All)
+                        {
+                            <option value="@__cat">@__cat</option>
+                        }
                     </select>
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #006570; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">EXTENT</label>
                     <input style="width: 100%; padding: 12px 16px; margin-bottom: 15px; border: 2px solid #e6b000; border-radius: 8px; background: white; font-size: 14px; color: #333; transition: all 0.3s; box-shadow: 0 2px 8px rgba(230, 176, 0, 0.1);"

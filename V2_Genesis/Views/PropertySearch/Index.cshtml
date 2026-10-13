@@ -2,7 +2,7 @@
 
 @{
     var roll = ViewBag.Roll as V2_Genesis.Models.GvList;
-    var townships = ViewBag.Townships as List<string> ?? new();
+    var townships = V2_Genesis.Helpers.NaturalSort.Order(ViewBag.Townships as List<string>);
 
     ViewData["Title"] = $"Property Search – {roll?.Short}";
     //Layout = "~/Views/Shared/_ClientLayout.cshtml";

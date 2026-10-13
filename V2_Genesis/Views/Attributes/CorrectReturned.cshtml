@@ -83,23 +83,7 @@
         if (prefix == "ValuationDetails"
             && propertyName is ("ValuationCategoryOnRoll" or "ActualUse"))
         {
-            return new()
-            {
-                ("Agricultural", "Agricultural"),
-                ("Business and Commercial", "Business and Commercial"),
-                ("Industrial", "Industrial"),
-                ("Mining", "Mining"),
-                ("Municipal", "Municipal"),
-                ("Multipurpose", "Multipurpose"),
-                ("Private Open Space", "Private Open Space"),
-                ("Public Open Space", "Public Open Space"),
-                ("Public Service Infrastructure", "Public Service Infrastructure"),
-                ("Public Service Purposes", "Public Service Purposes"),
-                ("Religious", "Religious"),
-                ("Residential", "Residential"),
-                ("Residential with Consent Use", "Residential with Consent Use"),
-                ("Vacant Land", "Vacant Land")
-            };
+            return V2_Genesis.Helpers.RollCategories.All.Select(c => (c, c)).ToList();
         }
 
         if (prefix == "ValuationDetails"

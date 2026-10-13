@@ -4,7 +4,7 @@
     //Layout = "~/Views/Shared/_ClientLayout.cshtml";
     Layout = "~/Views/Shared/_Legend_Layout.cshtml";
 
-    var townships = ViewBag.Townships as List<string> ?? new();
+    var townships = V2_Genesis.Helpers.NaturalSort.Order(ViewBag.Townships as List<string>);
     var schemes = ViewBag.Schemes as List<string> ?? new();
     var results = ViewBag.Results as List<PropertySearchResult>;
     var count = ViewBag.ResultCount as int? ?? 0;

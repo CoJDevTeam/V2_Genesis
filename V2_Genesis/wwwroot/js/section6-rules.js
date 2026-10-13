@@ -1,4 +1,4 @@
-/*
+﻿/*
  * section6-rules.js
  * ---------------------------------------------------------------------------
  * ONE set of Section 6 rules for all four forms:
@@ -23,6 +23,8 @@
  *       "Consent Use"            = "Residential with Consent Use"
  *       "Township Establishment" = "Township Development"
  *       "Multiple Purposes"      = "MultiPurpose*"
+ *    The dropdowns now use the Rates Policy 2026/27 names (Helpers/RollCategories.cs);
+ *    the old names above stay here so roll values still match.
  *    SPLIT categories belong to a multipurpose property. When the roll
  *    shows "Split - X" the client may NOT choose:
  *       - "MultiPurpose*"  (a split is already multipurpose), or
@@ -88,12 +90,15 @@
         'public service infrastructure': 'psi',
         'public service infrastructure-private': 'psi-private',
         'public service infrastructure private': 'psi-private',
+        'public service infrastructure - private': 'psi-private',
+        'private service infrastructure': 'psi-private',
 
         'public service purpose': 'psp',
         'public service purposes': 'psp',
 
         'public benefit organisation': 'pbo',
         'public benefit organization': 'pbo',
+        'public benefit organisations': 'pbo',
 
         'religious': 'religious',
 
